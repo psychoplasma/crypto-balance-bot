@@ -4,57 +4,22 @@ import (
 	"errors"
 )
 
+// SubscriptionType represents an enumaration type for subscription type
+type SubscriptionType string
+
+// Values for SubscriptionType
 const (
-	value = iota
-	movement
+	Value    = "1"
+	Movement = "2"
 )
 
-var errSubscriptionType = errors.New("wrong subscription type")
+var ErrSubscriptionType = errors.New("wrong subscription type")
 
-type SubscriptionType int
-
+// Subscription implements un/subscription logic for crypobot
 type Subscription struct {
+	UserID          string
+	Name            string
 	Type            SubscriptionType
 	AgainstCurrency string
 	Account         *Account
-}
-
-// Subscribe subscribes for value change or account movement events for the given account
-func (s *Subscription) Subscribe(stype SubscriptionType) error {
-	switch stype {
-	case value:
-		return s.subscribeForValue()
-	case movement:
-		return s.subscribeForMovement()
-	default:
-		return errSubscriptionType
-	}
-}
-
-// Unsubscribe unsubscribes for value change or account movement events for the given account
-func (s *Subscription) Unsubscribe(stype SubscriptionType) error {
-	switch stype {
-	case value:
-		return s.unsubscribeForValue(a)
-	case movement:
-		return s.unsubscribeForMovement(a)
-	default:
-		return errSubscriptionType
-	}
-}
-
-func (s *Subscription) subscribeForValue() error {
-	return nil
-}
-
-func (s *Subscription) subscribeForMovement() error {
-	return nil
-}
-
-func (s *Subscription) unsubscribeForValue() error {
-	return nil
-}
-
-func (s *Subscription) unsubscribeForMovement() error {
-	return nil
 }

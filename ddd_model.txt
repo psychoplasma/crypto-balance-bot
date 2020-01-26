@@ -1,0 +1,19 @@
+Actions:
+  - subscribe -> send subscription details
+    - balance movement (currency -> address)
+    - value change (currency -> parity_currency -> address)
+  - unsubscribe -> send unsubscription details
+    - all
+    - by currency
+    - by address
+  - get subscriptions
+    - all
+    - by currency
+
+Data:
+  - account
+    - currency
+    - addresses
+  - subscription
+    - type
+    - account

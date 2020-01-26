@@ -1,41 +1,71 @@
 package cryptobot
 
+import (
+	"log"
+	"math/big"
+)
+
+// CurrencyAPI represents API to fetch relavent info about account for the given currency
+type CurrencyAPI interface {
+	GetBalance(addressDesc string) (*big.Int, error)
+}
+
 // Account represents Account to be subscribed to bot
 type Account struct {
-	Name        string
-	CurrencyID  string
-	IsHD        bool
-	HDParams    *HD
-	AddressList []string
-}
-
-// HD represents HD wallet parameters to drive accounts for the given master public key
-type HD struct {
+	CurrencyID   string
 	MasterPubKey string
-	HdPath       string
-	AccountIndex string
+	AddressList  []string
+	Balances     map[string]*big.Int
+	API          CurrencyAPI
 }
 
-func (a *Account) AddByAddress() error {
-	return nil
+// NewAccountByAddress creates a new instance of Account with the given address
+func NewAccountByAddress(currencyID string, address string, api CurrencyAPI) *Account {
+	a := &Account{
+		CurrencyID:  currencyID,
+		AddressList: []string{address},
+		Balances:    map[string]*big.Int{},
+		API:         api,
+	}
+	a.UpdateBalances()
+	return a
 }
 
-func (a *Account) AddByPubKey() error {
-	return nil
+// NewAccountByMasterPubKey creates a new instance of Account which consist of addresses drived from the given master public key
+func NewAccountByMasterPubKey(currencyID string, masterPubKey string, api CurrencyAPI) *Account {
+	a := &Account{
+		CurrencyID:   currencyID,
+		MasterPubKey: masterPubKey,
+		AddressList:  deriveAddresses(masterPubKey),
+		Balances:     map[string]*big.Int{},
+		API:          api,
+	}
+	a.UpdateBalances()
+	return a
 }
 
-func (a *Account) AddByMasterPubKey() error {
-	return nil
+// UpdateBalances updates balances in this account and returns any balance change
+func (a *Account) UpdateBalances() map[string]*big.Int {
+	movements := map[string]*big.Int{}
+	for _, addr := range a.AddressList {
+		b, err := a.API.GetBalance(addr)
+		if err != nil {
+			log.Printf("cannot fetch balance, %s", err)
+		}
+
+		diff := big.NewInt(0)
+		diff = diff.Sub(b, a.Balances[addr])
+
+		if diff.Cmp(big.NewInt(0)) != 0 {
+			movements[addr] = diff
+		}
+		a.Balances[addr] = b
+	}
+
+	return movements
 }
 
-func (a *Account) RemoveByAddress() error {
-	return nil
-}
-
-func (a *Account) RemoveByAsset() error {
-	return nil
-}
-
-func (a *Account) RemoveAll() error {
-	return nil
+// TODO: implement
+func deriveAddresses(masterPubKey string) []string {
+	return []string{}
 }
