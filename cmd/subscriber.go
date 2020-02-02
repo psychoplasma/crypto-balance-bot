@@ -51,8 +51,14 @@ func subscribe(userID string, stype SubscriptionType, currencyID string, addrDes
 		return ErrAlreadyExists
 	}
 
+	//TODO: use a factory function to create account
+	a, err := cryptobot.NewAccount(currencyID, addrDesc, nil)
+	if err != nil {
+		return err
+	}
+
 	s.UserID = userID
-	s.Account = cryptobot.NewAccountByAddress(currencyID, addrDesc, nil) //TODO: use a factory function to create account
+	s.Account = a
 	s.AgainstCurrency = currencyAgainst
 
 	subscriptions[subsKey] = s

@@ -1,15 +1,22 @@
 package cryptobot
 
 import (
+	"errors"
 	"log"
 	"math/big"
+)
+
+// Represets error related to account operations
+var (
+	ErrInvalidAddrDesc = errors.New("invalid address descriptor")
 )
 
 // CurrencyAPI represents API to fetch relavent info about account for the given currency
 type CurrencyAPI interface {
 	GetBalance(addressDesc string) (*big.Int, error)
 	CreateAddress(pubKey string) (string, error)
-	ValidateAddress(addressDesc string) error
+	ValidateAddress(address string) error
+	ValidatePubKey(pubKey string) error
 }
 
 // Account represents Account to be subscribed to bot
@@ -21,8 +28,21 @@ type Account struct {
 	API          CurrencyAPI
 }
 
+// NewAccount creates a new instance of Account with the given address descriptor and currency
+func NewAccount(currencyID string, addrDesc string, api CurrencyAPI) (*Account, error) {
+	if err := api.ValidatePubKey(addrDesc); err == nil {
+		return newAccountByMasterPubKey(currencyID, addrDesc, api), nil
+	}
+
+	if err := api.ValidateAddress(addrDesc); err == nil {
+		return newAccountByAddress(currencyID, addrDesc, api), nil
+	}
+
+	return nil, ErrInvalidAddrDesc
+}
+
 // NewAccountByAddress creates a new instance of Account with the given address
-func NewAccountByAddress(currencyID string, address string, api CurrencyAPI) *Account {
+func newAccountByAddress(currencyID string, address string, api CurrencyAPI) *Account {
 	a := &Account{
 		CurrencyID:  currencyID,
 		AddressList: []string{address},
@@ -34,7 +54,7 @@ func NewAccountByAddress(currencyID string, address string, api CurrencyAPI) *Ac
 }
 
 // NewAccountByMasterPubKey creates a new instance of Account which consist of addresses drived from the given master public key
-func NewAccountByMasterPubKey(currencyID string, masterPubKey string, api CurrencyAPI) *Account {
+func newAccountByMasterPubKey(currencyID string, masterPubKey string, api CurrencyAPI) *Account {
 	a := &Account{
 		CurrencyID:   currencyID,
 		MasterPubKey: masterPubKey,
