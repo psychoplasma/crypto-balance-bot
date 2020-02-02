@@ -8,6 +8,8 @@ import (
 // CurrencyAPI represents API to fetch relavent info about account for the given currency
 type CurrencyAPI interface {
 	GetBalance(addressDesc string) (*big.Int, error)
+	CreateAddress(pubKey string) (string, error)
+	ValidateAddress(addressDesc string) error
 }
 
 // Account represents Account to be subscribed to bot
