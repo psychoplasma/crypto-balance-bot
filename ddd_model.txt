@@ -10,7 +10,7 @@ Actions:
     - all
     - by currency
 
-Data:
+Domain:
   - account
     - currency
     - addresses

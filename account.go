@@ -11,68 +11,35 @@ var (
 	ErrInvalidAddrDesc = errors.New("invalid address descriptor")
 )
 
-// CurrencyAPI represents API to fetch relavent info about account for the given currency
-type CurrencyAPI interface {
-	GetBalance(addressDesc string) (*big.Int, error)
-	CreateAddress(pubKey string) (string, error)
-	ValidateAddress(address string) error
-	ValidatePubKey(pubKey string) error
-}
-
 // Account represents Account to be subscribed to bot
 type Account struct {
-	CurrencyID   string
-	MasterPubKey string
-	AddressList  []string
-	Balances     map[string]*big.Int
-	API          CurrencyAPI
+	c           Currency
+	xPubKey     string
+	AddressList []string
+	Balances    map[string]*big.Int // Keeps balances for each address
+	TxHashes    map[string][]string // Keeps transaction hashes for each address
 }
 
 // NewAccount creates a new instance of Account with the given address descriptor and currency
-func NewAccount(currencyID string, addrDesc string, api CurrencyAPI) (*Account, error) {
-	if err := api.ValidatePubKey(addrDesc); err == nil {
-		return newAccountByMasterPubKey(currencyID, addrDesc, api), nil
+func NewAccount(c Currency, addrDesc string) (*Account, error) {
+	if err := c.API.ValidatePubKey(addrDesc); err == nil {
+		return newAccountByMasterPubKey(c, addrDesc), nil
 	}
 
-	if err := api.ValidateAddress(addrDesc); err == nil {
-		return newAccountByAddress(currencyID, addrDesc, api), nil
+	if err := c.API.ValidateAddress(addrDesc); err == nil {
+		return newAccountByAddress(c, addrDesc), nil
 	}
 
 	return nil, ErrInvalidAddrDesc
-}
-
-// NewAccountByAddress creates a new instance of Account with the given address
-func newAccountByAddress(currencyID string, address string, api CurrencyAPI) *Account {
-	a := &Account{
-		CurrencyID:  currencyID,
-		AddressList: []string{address},
-		Balances:    map[string]*big.Int{},
-		API:         api,
-	}
-	a.UpdateBalances()
-	return a
-}
-
-// NewAccountByMasterPubKey creates a new instance of Account which consist of addresses drived from the given master public key
-func newAccountByMasterPubKey(currencyID string, masterPubKey string, api CurrencyAPI) *Account {
-	a := &Account{
-		CurrencyID:   currencyID,
-		MasterPubKey: masterPubKey,
-		AddressList:  deriveAddresses(masterPubKey),
-		Balances:     map[string]*big.Int{},
-		API:          api,
-	}
-	a.UpdateBalances()
-	return a
 }
 
 // UpdateBalances updates balances in this account and returns any balance change
 func (a *Account) UpdateBalances() map[string]*big.Int {
 	movements := map[string]*big.Int{}
 	for _, addr := range a.AddressList {
-		b, err := a.API.GetBalance(addr)
+		b, err := a.c.API.GetBalance(addr)
 		if err != nil {
-			log.Printf("cannot fetch balance, %s", err)
+			log.Printf("cannot fetch balance for address(%s), %s", addr, err)
 		}
 
 		diff := big.NewInt(0)
@@ -87,7 +54,50 @@ func (a *Account) UpdateBalances() map[string]*big.Int {
 	return movements
 }
 
+// UpdateTxs updates tx hashes for each address
+// in this account and returns the changes
+func (a *Account) UpdateTxs() map[string][]string {
+	changes := map[string][]string{}
+	for _, addr := range a.AddressList {
+		txs, err := a.c.API.GetTransactions(addr, len(a.TxHashes[addr]))
+		if err != nil {
+			log.Printf("cannot fetch transactions for address(%s), %s", addr, err)
+		}
+
+		if len(txs) > 0 {
+			changes[addr] = txs
+		}
+		a.TxHashes[addr] = append(a.TxHashes[addr], txs...)
+	}
+
+	return changes
+}
+
+// NewAccountByAddress creates a new instance of Account with the given address
+func newAccountByAddress(c Currency, address string) *Account {
+	a := &Account{
+		c:           c,
+		AddressList: []string{address},
+		Balances:    map[string]*big.Int{},
+		TxHashes:    map[string][]string{},
+	}
+	return a
+}
+
+// NewAccountByMasterPubKey creates a new instance of Account
+// which consist of addresses drived from the given master public key
+func newAccountByMasterPubKey(c Currency, xPubKey string) *Account {
+	a := &Account{
+		c:           c,
+		xPubKey:     xPubKey,
+		AddressList: deriveAddresses(xPubKey),
+		Balances:    map[string]*big.Int{},
+		TxHashes:    map[string][]string{},
+	}
+	return a
+}
+
 // TODO: implement
-func deriveAddresses(masterPubKey string) []string {
+func deriveAddresses(xPubKey string) []string {
 	return []string{}
 }

@@ -13,16 +13,12 @@ import (
 
 const parameterSeparator = " "
 
-var subscriptions map[string]*Subscription
-
 type config struct {
 	Token       string        `yaml:"token"`
 	PollingTime time.Duration `yaml:"polling-time"`
 }
 
-func main() {
-	subscriptions := make(map[string]*Subscription, 1)
-
+func startBot() {
 	c, err := readConfig("./config.yaml")
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +32,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b.Handle("/subscribe", func(m *tb.Message) {
+	b.Handle("/subscribe-for-value", func(m *tb.Message) {
+		fmt.Printf("%#v\n", m.Payload)
+		msg := strings.Split(m.Payload, parameterSeparator)
+		fmt.Printf("%#v\n", msg)
+
+		subsAppService.SubscribeForValue(
+			m.Sender.Recipient(),
+			msg[0],
+			currencyAppService.getCurrency(msg[1]),
+			msg[2],
+			currencyAppService.getCurrency(msg[1])
+		)
+		
+		b.Send(m.Sender, fmt.Sprintf("subscribed %s:%s for", msg[0], msg[1]))
+	})
+
+	b.Handle("/subscribe-for-movement", func(m *tb.Message) {
 		fmt.Printf("%#v\n", m.Payload)
 		msg := strings.Split(m.Payload, parameterSeparator)
 		fmt.Printf("%#v\n", msg)
