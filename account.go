@@ -13,7 +13,7 @@ var (
 
 // Account represents Account to be subscribed to bot
 type Account struct {
-	c           Currency
+	Currency    Currency
 	xPubKey     string
 	AddressList []string
 	Balances    map[string]*big.Int // Keeps balances for each address
@@ -37,7 +37,7 @@ func NewAccount(c Currency, addrDesc string) (*Account, error) {
 func (a *Account) UpdateBalances() map[string]*big.Int {
 	movements := map[string]*big.Int{}
 	for _, addr := range a.AddressList {
-		b, err := a.c.API.GetBalance(addr)
+		b, err := a.Currency.API.GetBalance(addr)
 		if err != nil {
 			log.Printf("cannot fetch balance for address(%s), %s", addr, err)
 		}
@@ -59,7 +59,7 @@ func (a *Account) UpdateBalances() map[string]*big.Int {
 func (a *Account) UpdateTxs() map[string][]string {
 	changes := map[string][]string{}
 	for _, addr := range a.AddressList {
-		txs, err := a.c.API.GetTransactions(addr, len(a.TxHashes[addr]))
+		txs, err := a.Currency.API.GetTransactions(addr, len(a.TxHashes[addr]))
 		if err != nil {
 			log.Printf("cannot fetch transactions for address(%s), %s", addr, err)
 		}
@@ -76,7 +76,7 @@ func (a *Account) UpdateTxs() map[string][]string {
 // NewAccountByAddress creates a new instance of Account with the given address
 func newAccountByAddress(c Currency, address string) *Account {
 	a := &Account{
-		c:           c,
+		Currency:    c,
 		AddressList: []string{address},
 		Balances:    map[string]*big.Int{},
 		TxHashes:    map[string][]string{},
@@ -88,7 +88,7 @@ func newAccountByAddress(c Currency, address string) *Account {
 // which consist of addresses drived from the given master public key
 func newAccountByMasterPubKey(c Currency, xPubKey string) *Account {
 	a := &Account{
-		c:           c,
+		Currency:    c,
 		xPubKey:     xPubKey,
 		AddressList: deriveAddresses(xPubKey),
 		Balances:    map[string]*big.Int{},

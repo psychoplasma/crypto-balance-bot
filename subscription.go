@@ -25,8 +25,9 @@ type SubscriptionRepository interface {
 	Size() int
 	Get(id string) (*Subscription, error)
 	GetAllForUser(userID string) ([]*Subscription, error)
+	GetAllActivated() ([]*Subscription, error)
 	Add(s *Subscription) error
-	Remove(id string) error
+	Remove(s *Subscription) error
 }
 
 // Subscription implements un/subscription logic for crypobot
@@ -46,8 +47,8 @@ func ValueSubscription(userID string, name string, c Currency, addrDesc string, 
 }
 
 // MovementSubscription creates a new movement-based subscription
-func MovementSubscription(userID string, name string, c Currency, addrDesc string, against Currency) (*Subscription, error) {
-	return NewSubscription(userID, name, SubscriptionType(Value), c, addrDesc, against)
+func MovementSubscription(userID string, name string, c Currency, addrDesc string) (*Subscription, error) {
+	return NewSubscription(userID, name, SubscriptionType(Value), c, addrDesc, Currency{})
 }
 
 // NewSubscription creates a new subscription

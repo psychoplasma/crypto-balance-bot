@@ -13,7 +13,6 @@ var availableCurrencies = map[string]*cryptoBot.Currency{
 		Symbol:  "btc",
 		API:     &coins.BitcoinAPI{},
 	},
-
 	"eth": {
 		Decimal: 16,
 		Symbol:  "eth",
@@ -31,13 +30,13 @@ type Currency struct {
 type CurrencyService struct {
 }
 
-// CurrencyService factory function
-func CurrencyService() *CurrencyService {
+// NewCurrencyService factory function
+func NewCurrencyService() *CurrencyService {
 	return &CurrencyService{}
 }
 
 // GetCurrency returns the currency for the given symbol
-func (cs *CurrencyService) GetCurrency(symbol string) Currency {
+func (cs *CurrencyService) GetCurrency(symbol string) *cryptoBot.Currency {
 	return availableCurrencies[symbol]
 }
 

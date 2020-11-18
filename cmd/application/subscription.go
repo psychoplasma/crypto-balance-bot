@@ -9,8 +9,8 @@ type SubscriptionService struct {
 	r cryptoBot.SubscriptionRepository
 }
 
-// SubscriptionService fatory function
-func SubscriptionService(r cryptoBot.SubscriptionRepository) *SubscriptionService {
+// NewSubscriptionService fatory function
+func NewSubscriptionService(r cryptoBot.SubscriptionRepository) *SubscriptionService {
 	return &SubscriptionService{
 		r: r,
 	}
@@ -28,8 +28,8 @@ func (ss *SubscriptionService) SubscribeForValue(userID string, name string, c c
 }
 
 // SubscribeForMovement creates a new movement-based subscription and activates it
-func (ss *SubscriptionService) SubscribeForMovement(userID string, name string, c cryptoBot.Currency, addrDesc string, against cryptoBot.Currency) error {
-	s, err := cryptoBot.MovementSubscription(userID, name, c, addrDesc, against)
+func (ss *SubscriptionService) SubscribeForMovement(userID string, name string, c cryptoBot.Currency, addrDesc string) error {
+	s, err := cryptoBot.MovementSubscription(userID, name, c, addrDesc)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,11 @@ func (ss *SubscriptionService) SubscribeForMovement(userID string, name string, 
 
 // Unsubscribe removes the given subscription
 func (ss *SubscriptionService) Unsubscribe(subscriptionID string) error {
-	return ss.r.Remove(subscriptionID)
+	s, err := ss.r.Get(subscriptionID)
+	if err != nil {
+		return err
+	}
+	return ss.r.Remove(s)
 }
 
 // UnsubscribeAll removes all subscription belogs to the given user
@@ -51,7 +55,7 @@ func (ss *SubscriptionService) UnsubscribeAll(userID string) error {
 	}
 
 	for _, s := range subs {
-		if err := ss.r.Remove(s.ID); err != nil {
+		if err := ss.r.Remove(s); err != nil {
 			return err
 		}
 	}
@@ -66,6 +70,7 @@ func (ss *SubscriptionService) ActivateSubscription(subscriptionID string) error
 		return err
 	}
 	s.Activate()
+	ss.r.Add(s)
 
 	return nil
 }
@@ -77,32 +82,22 @@ func (ss *SubscriptionService) DeactivateSubscription(subscriptionID string) err
 		return err
 	}
 	s.Deactivate()
+	ss.r.Add(s)
 
 	return nil
 }
 
 // GetSubscription returns the details of the given subscription
-func (ss *SubscriptionService) GetSubscription(userID string) (*cryptoBot.Subscription, error) {
-	return ss.r.Get(userID)
+func (ss *SubscriptionService) GetSubscription(id string) (*cryptoBot.Subscription, error) {
+	return ss.r.Get(id)
 }
 
 // GetSubscriptionsForUser returns the details of all subscriptions for the given user
 func (ss *SubscriptionService) GetSubscriptionsForUser(userID string) ([]*cryptoBot.Subscription, error) {
-	subs, err := ss.r.GetAllForUser(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return subs, nil
+	return ss.r.GetAllForUser(userID)
 }
 
-// GetActiveSubscriptions returns the active subscriptions
-func (ss *SubscriptionService) GetActiveSubscriptions(userID string) ([]*cryptoBot.Subscription, error) {
-	// FIXME:
-	subs, err := ss.r.GetAllForUser(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return subs, nil
+// GetActiveSubscriptions returns the all active subscriptions
+func (ss *SubscriptionService) GetActiveSubscriptions() ([]*cryptoBot.Subscription, error) {
+	return ss.r.GetAllActivated()
 }
