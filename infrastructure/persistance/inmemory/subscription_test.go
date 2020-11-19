@@ -4,27 +4,27 @@ import (
 	"os"
 	"testing"
 
-	cyrptoBot "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/repo/inmemory"
+	domain "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistance/inmemory"
 )
 
 var subsRepo = inmemory.NewSubscriptionReposititory()
-var testSubs = []*cyrptoBot.Subscription{
-	&cyrptoBot.Subscription{
+var testSubs = []*domain.Subscription{
+	&domain.Subscription{
 		ID:        "1",
 		UserID:    "user1",
 		Activated: true,
 	},
-	&cyrptoBot.Subscription{
+	&domain.Subscription{
 		ID:     "2",
 		UserID: "user1",
 	},
-	&cyrptoBot.Subscription{
+	&domain.Subscription{
 		ID:        "3",
 		UserID:    "user2",
 		Activated: true,
 	},
-	&cyrptoBot.Subscription{
+	&domain.Subscription{
 		ID:        "4",
 		UserID:    "user2",
 		Activated: true,
@@ -78,7 +78,7 @@ func TestGetAllAcivated(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	expectedSize := len(testSubs) + 1
-	testItem := &cyrptoBot.Subscription{
+	testItem := &domain.Subscription{
 		ID:     "5",
 		UserID: "user3",
 	}
@@ -100,7 +100,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestAdd_ExistingSubscription_WithDifferentUserID(t *testing.T) {
-	testItem := &cyrptoBot.Subscription{
+	testItem := &domain.Subscription{
 		ID:     "1",
 		UserID: "user3",
 	}

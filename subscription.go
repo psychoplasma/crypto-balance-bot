@@ -2,13 +2,12 @@ package cryptobot
 
 import (
 	"errors"
-
-	"github.com/google/uuid"
 )
 
 // Represents errors related to subscription
 var (
 	ErrInvalidSubscriptionType = errors.New("invalid subscription type")
+	ErrInvalidID               = errors.New("invalid identity")
 )
 
 // SubscriptionType enumarations
@@ -16,12 +15,13 @@ type SubscriptionType string
 
 // Values for SubscriptionType
 const (
-	Value    = SubscriptionType("value")
-	Movement = SubscriptionType("movement")
+	ValueSubscription    = SubscriptionType("value")
+	MovementSubscription = SubscriptionType("movement")
 )
 
 // SubscriptionRepository repostitory for subscriptions
 type SubscriptionRepository interface {
+	NextIdentity() string
 	Size() int
 	Get(id string) (*Subscription, error)
 	GetAllForUser(userID string) ([]*Subscription, error)
@@ -30,7 +30,7 @@ type SubscriptionRepository interface {
 	Remove(s *Subscription) error
 }
 
-// Subscription implements un/subscription logic for crypobot
+// Subscription is a root aggragate
 type Subscription struct {
 	ID              string
 	UserID          string
@@ -38,42 +38,37 @@ type Subscription struct {
 	Type            SubscriptionType
 	Activated       bool
 	AgainstCurrency Currency
-	Account         *Account
-}
-
-// ValueSubscription creates a new value-based subscription
-func ValueSubscription(userID string, name string, c Currency, addrDesc string, against Currency) (*Subscription, error) {
-	return NewSubscription(userID, name, SubscriptionType(Movement), c, addrDesc, against)
-}
-
-// MovementSubscription creates a new movement-based subscription
-func MovementSubscription(userID string, name string, c Currency, addrDesc string) (*Subscription, error) {
-	return NewSubscription(userID, name, SubscriptionType(Value), c, addrDesc, Currency{})
+	Accounts        map[string]*Account
 }
 
 // NewSubscription creates a new subscription
-func NewSubscription(userID string, name string, stype SubscriptionType, c Currency, addrDesc string, against Currency) (*Subscription, error) {
-	if stype != Value && stype != Movement {
+func NewSubscription(id string, userID string, name string, stype SubscriptionType, against Currency) (*Subscription, error) {
+	if id == "" {
+		return nil, ErrInvalidID
+	}
+
+	if isSubsctiptionTypeValid(stype) {
 		return nil, ErrInvalidSubscriptionType
 	}
 
-	id := uuid.New()
 	s := &Subscription{
-		Name:   name,
-		UserID: userID,
-		ID:     id.String(),
-		Type:   stype,
+		ID:              id,
+		UserID:          userID,
+		Name:            name,
+		Type:            stype,
+		AgainstCurrency: against,
+		Accounts:        make(map[string]*Account),
 	}
-
-	a, err := NewAccount(c, addrDesc)
-	if err != nil {
-		return nil, err
-	}
-
-	s.Account = a
-	s.AgainstCurrency = against
 
 	return s, nil
+}
+
+func (s *Subscription) AddAccount(c Currency, address string) {
+	if s.Accounts[address] != nil {
+		return
+	}
+
+	s.Accounts[address] = NewAccount(c, address)
 }
 
 // Activate activates the subscription. User will start getting notifications about this subscription
@@ -90,4 +85,9 @@ func (s *Subscription) Deactivate() {
 		return
 	}
 	s.Activated = false
+}
+
+func isSubsctiptionTypeValid(stype SubscriptionType) bool {
+	return stype != ValueSubscription &&
+		stype != MovementSubscription
 }

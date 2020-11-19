@@ -1,6 +1,9 @@
-package coins
+package coin
 
-import "math/big"
+import (
+	"errors"
+	"math/big"
+)
 
 // BitcoinAPI implements CurrencyAPI for Bitcoin
 type BitcoinAPI struct {
@@ -18,10 +21,14 @@ func (a *BitcoinAPI) CreateAddress(pubKey string) (string, error) {
 	return "", nil
 }
 
+func (a *BitcoinAPI) DeriveAddressFromXPubKey(xPubKey string) ([]string, error) {
+	return nil, nil
+}
+
 func (a *BitcoinAPI) ValidateAddress(addressDesc string) error {
 	return nil
 }
 
 func (a *BitcoinAPI) ValidatePubKey(pubKey string) error {
-	return nil
+	return errors.New("not implemented")
 }

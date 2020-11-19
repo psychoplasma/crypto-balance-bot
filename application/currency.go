@@ -1,29 +1,20 @@
 package application
 
 import (
-	cryptoBot "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/coins"
+	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
 // AvailableCurrencies contains the implemented currencies
 // TODO: Load these through a configuration file
-var availableCurrencies = map[string]*cryptoBot.Currency{
+var availableCurrencies = map[string]*domain.Currency{
 	"btc": {
 		Decimal: 8,
 		Symbol:  "btc",
-		API:     &coins.BitcoinAPI{},
 	},
 	"eth": {
 		Decimal: 16,
 		Symbol:  "eth",
-		API:     &coins.EthereumAPI{},
 	},
-}
-
-// Currency represents presentation model for Currency entity in our domain
-type Currency struct {
-	Symbol  string `json:"symbol"`
-	Decimal int    `json:"decimal"`
 }
 
 // CurrencyService exposes application services for currency entity
@@ -36,15 +27,15 @@ func NewCurrencyService() *CurrencyService {
 }
 
 // GetCurrency returns the currency for the given symbol
-func (cs *CurrencyService) GetCurrency(symbol string) *cryptoBot.Currency {
+func (cs *CurrencyService) GetCurrency(symbol string) *domain.Currency {
 	return availableCurrencies[symbol]
 }
 
 // GetAvailableCurrencies returns available currencies implemented this service
-func (cs *CurrencyService) GetAvailableCurrencies() []Currency {
-	currs := make([]Currency, len(availableCurrencies))
+func (cs *CurrencyService) GetAvailableCurrencies() []domain.Currency {
+	currs := make([]domain.Currency, len(availableCurrencies))
 	for _, c := range availableCurrencies {
-		currs = append(currs, Currency{
+		currs = append(currs, domain.Currency{
 			Symbol:  c.Symbol,
 			Decimal: c.Decimal,
 		})

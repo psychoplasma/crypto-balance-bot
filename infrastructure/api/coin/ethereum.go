@@ -1,6 +1,9 @@
-package coins
+package coin
 
-import "math/big"
+import (
+	"errors"
+	"math/big"
+)
 
 // EthereumAPI implements CurrencyAPI for Ethereum
 type EthereumAPI struct {
@@ -18,10 +21,14 @@ func (a *EthereumAPI) CreateAddress(pubKey string) (string, error) {
 	return "", nil
 }
 
+func (a *EthereumAPI) DeriveAddressFromXPubKey(xPubKey string) ([]string, error) {
+	return nil, nil
+}
+
 func (a *EthereumAPI) ValidateAddress(addressDesc string) error {
 	return nil
 }
 
 func (a *EthereumAPI) ValidatePubKey(pubKey string) error {
-	return nil
+	return errors.New("not implemented")
 }

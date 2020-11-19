@@ -3,27 +3,33 @@ package inmemory
 import (
 	"errors"
 
-	cryptoBot "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/google/uuid"
+	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
 var errIndifferentUserID = errors.New("updating UserID field of an existing subscription is not allowed")
 
 // SubscriptionReposititory is an in-memory implementation of SubscriptionReposititory
 type SubscriptionReposititory struct {
-	subsByUserID  map[string]map[string]*cryptoBot.Subscription
-	subsByID      map[string]*cryptoBot.Subscription
-	subsActivated map[string]*cryptoBot.Subscription
+	subsByUserID  map[string]map[string]*domain.Subscription
+	subsByID      map[string]*domain.Subscription
+	subsActivated map[string]*domain.Subscription
 	size          int
 }
 
 // NewSubscriptionReposititory creates a new instance of SubscriptionReposititory
 func NewSubscriptionReposititory() *SubscriptionReposititory {
 	return &SubscriptionReposititory{
-		subsByUserID:  make(map[string]map[string]*cryptoBot.Subscription),
-		subsByID:      make(map[string]*cryptoBot.Subscription),
-		subsActivated: make(map[string]*cryptoBot.Subscription),
+		subsByUserID:  make(map[string]map[string]*domain.Subscription),
+		subsByID:      make(map[string]*domain.Subscription),
+		subsActivated: make(map[string]*domain.Subscription),
 		size:          0,
 	}
+}
+
+// NextIdentity returns the next available identity
+func (r *SubscriptionReposititory) NextIdentity() string {
+	return uuid.New().String()
 }
 
 // Size returns the total number of subscriptions persited in the repository
@@ -32,13 +38,13 @@ func (r *SubscriptionReposititory) Size() int {
 }
 
 // Get returns the subscription for the given subscription id
-func (r *SubscriptionReposititory) Get(id string) (*cryptoBot.Subscription, error) {
+func (r *SubscriptionReposititory) Get(id string) (*domain.Subscription, error) {
 	return r.subsByID[id], nil
 }
 
 // GetAllForUser returns all subscriptions for the given user id
-func (r *SubscriptionReposititory) GetAllForUser(userID string) ([]*cryptoBot.Subscription, error) {
-	subs := make([]*cryptoBot.Subscription, 0)
+func (r *SubscriptionReposititory) GetAllForUser(userID string) ([]*domain.Subscription, error) {
+	subs := make([]*domain.Subscription, 0)
 	for _, s := range r.subsByUserID[userID] {
 		subs = append(subs, s)
 	}
@@ -46,8 +52,8 @@ func (r *SubscriptionReposititory) GetAllForUser(userID string) ([]*cryptoBot.Su
 }
 
 // GetAllActivated returns all activated subscriptions
-func (r *SubscriptionReposititory) GetAllActivated() ([]*cryptoBot.Subscription, error) {
-	subs := make([]*cryptoBot.Subscription, 0)
+func (r *SubscriptionReposititory) GetAllActivated() ([]*domain.Subscription, error) {
+	subs := make([]*domain.Subscription, 0)
 	for _, s := range r.subsActivated {
 		subs = append(subs, s)
 	}
@@ -55,7 +61,7 @@ func (r *SubscriptionReposititory) GetAllActivated() ([]*cryptoBot.Subscription,
 }
 
 // Add persists/updates the given subscription
-func (r *SubscriptionReposititory) Add(s *cryptoBot.Subscription) error {
+func (r *SubscriptionReposititory) Add(s *domain.Subscription) error {
 	// Do not allow to update UserID of an existing subscription
 	if r.subsByID[s.ID] != nil && r.subsByID[s.ID].UserID != s.UserID {
 		return errIndifferentUserID
@@ -70,7 +76,7 @@ func (r *SubscriptionReposititory) Add(s *cryptoBot.Subscription) error {
 	r.subsByID[s.ID] = s
 
 	if r.subsByUserID[s.UserID] == nil {
-		r.subsByUserID[s.UserID] = make(map[string]*cryptoBot.Subscription)
+		r.subsByUserID[s.UserID] = make(map[string]*domain.Subscription)
 	}
 	r.subsByUserID[s.UserID][s.ID] = s
 
@@ -84,7 +90,7 @@ func (r *SubscriptionReposititory) Add(s *cryptoBot.Subscription) error {
 }
 
 // Remove removes the given subscription from the persistance
-func (r *SubscriptionReposititory) Remove(s *cryptoBot.Subscription) error {
+func (r *SubscriptionReposititory) Remove(s *domain.Subscription) error {
 	// Decrement the size if the item exists upon removal
 	if r.subsByID[s.ID] != nil {
 		r.size--

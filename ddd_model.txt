@@ -11,9 +11,8 @@ Actions:
     - by currency
 
 Domain:
-  - account
-    - currency
-    - addresses
-  - subscription
+  ** subscription
     - type
-    - account
+    * account
+      - currency
+      - addresses

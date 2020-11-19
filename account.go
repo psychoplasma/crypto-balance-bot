@@ -2,102 +2,82 @@ package cryptobot
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"math/big"
 )
 
 // Represets error related to account operations
 var (
 	ErrInvalidAddrDesc = errors.New("invalid address descriptor")
+	ErrInvalidXPubKey  = errors.New("unable to derive addresses from the given master public key")
 )
 
-// Account represents Account to be subscribed to bot
+type AccountService interface {
+	UpdateBalances(a *Account) (map[string]*big.Int, error)
+	UpdateTxs(a *Account) (map[string][]string, error)
+}
+
+// Transaction is a value object
+type Transaction struct {
+	Hash         string
+	BlockHeight  int
+	changeAmount *big.Int
+}
+
+type Balance struct {
+	Amount *big.Int
+	c      Currency
+}
+
+func (b Balance) ToString() string {
+	return fmt.Sprintf("%s %s", b.Amount.Text(10), b.c.Symbol)
+}
+
+// Account in a value object (even it seems like an entity).
+// Only balance and tx related properties change over time
+// but they are actually for tracking purposes which is not
+// really a Address's property.
 type Account struct {
-	Currency    Currency
-	xPubKey     string
-	AddressList []string
-	Balances    map[string]*big.Int // Keeps balances for each address
-	TxHashes    map[string][]string // Keeps transaction hashes for each address
+	address string
+	b       *Balance
+	txCount int
+	txs     map[string]*Transaction
 }
 
-// NewAccount creates a new instance of Account with the given address descriptor and currency
-func NewAccount(c Currency, addrDesc string) (*Account, error) {
-	if err := c.API.ValidatePubKey(addrDesc); err == nil {
-		return newAccountByMasterPubKey(c, addrDesc), nil
+// NewAccount creates a new instance of Account with the given address
+func NewAccount(c Currency, address string) *Account {
+	return &Account{
+		address: address,
+		b: &Balance{
+			Amount: big.NewInt(0),
+			c:      c,
+		},
 	}
-
-	if err := c.API.ValidateAddress(addrDesc); err == nil {
-		return newAccountByAddress(c, addrDesc), nil
-	}
-
-	return nil, ErrInvalidAddrDesc
 }
 
-// UpdateBalances updates balances in this account and returns any balance change
-func (a *Account) UpdateBalances() map[string]*big.Int {
-	movements := map[string]*big.Int{}
-	for _, addr := range a.AddressList {
-		b, err := a.Currency.API.GetBalance(addr)
-		if err != nil {
-			log.Printf("cannot fetch balance for address(%s), %s", addr, err)
+func (a *Account) Address() string {
+	return a.address
+}
+
+func (a *Account) Balance() Balance {
+	return *a.b
+}
+
+func (a *Account) TxCount() int {
+	return a.txCount
+}
+
+func (a *Account) AddTxs(txs []*Transaction) {
+	for _, tx := range txs {
+		if a.txs[tx.Hash] != nil {
+			continue
 		}
 
-		diff := big.NewInt(0)
-		diff = diff.Sub(b, a.Balances[addr])
-
-		if diff.Cmp(big.NewInt(0)) != 0 {
-			movements[addr] = diff
-		}
-		a.Balances[addr] = b
+		a.txs[tx.Hash] = tx
+		a.txCount++
 	}
-
-	return movements
 }
 
-// UpdateTxs updates tx hashes for each address
-// in this account and returns the changes
-func (a *Account) UpdateTxs() map[string][]string {
-	changes := map[string][]string{}
-	for _, addr := range a.AddressList {
-		txs, err := a.Currency.API.GetTransactions(addr, len(a.TxHashes[addr]))
-		if err != nil {
-			log.Printf("cannot fetch transactions for address(%s), %s", addr, err)
-		}
-
-		if len(txs) > 0 {
-			changes[addr] = txs
-		}
-		a.TxHashes[addr] = append(a.TxHashes[addr], txs...)
-	}
-
-	return changes
-}
-
-// NewAccountByAddress creates a new instance of Account with the given address
-func newAccountByAddress(c Currency, address string) *Account {
-	a := &Account{
-		Currency:    c,
-		AddressList: []string{address},
-		Balances:    map[string]*big.Int{},
-		TxHashes:    map[string][]string{},
-	}
-	return a
-}
-
-// NewAccountByMasterPubKey creates a new instance of Account
-// which consist of addresses drived from the given master public key
-func newAccountByMasterPubKey(c Currency, xPubKey string) *Account {
-	a := &Account{
-		Currency:    c,
-		xPubKey:     xPubKey,
-		AddressList: deriveAddresses(xPubKey),
-		Balances:    map[string]*big.Int{},
-		TxHashes:    map[string][]string{},
-	}
-	return a
-}
-
-// TODO: implement
-func deriveAddresses(xPubKey string) []string {
-	return []string{}
+func (a *Account) UpdateBalance(b *big.Int) {
+	a.b.Amount = b
 }
