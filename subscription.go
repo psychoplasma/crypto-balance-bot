@@ -78,6 +78,11 @@ func (s *Subscription) Name() string {
 	return s.name
 }
 
+// Type returns stype property
+func (s *Subscription) Type() SubscriptionType {
+	return s.stype
+}
+
 // IsActivated returns activated property
 func (s *Subscription) IsActivated() bool {
 	return s.activated

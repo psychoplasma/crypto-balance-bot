@@ -1,13 +1,9 @@
 package cryptobot
 
-import "math/big"
-
 // CurrencyService represents API to fetch relavent info about account for the given currency
 type CurrencyService interface {
-	// GetBalance fetches balance of the given address
-	GetBalance(address string) (*big.Int, error)
-	// GetTransactions fetches transaction of the given address starting from the given index
-	GetTransactions(address string, index int) ([]*Transaction, error)
+	// GetAddressTxs fetches txs of the given address since the given block height(exclusive)
+	GetAddressTxs(address string, sinceBlockHeight int) ([]*AccountMovement, error)
 	// ValidateAddress checks whether or not the given address is valid
 	// and returns an error in case of invalid address
 	ValidateAddress(address string) error

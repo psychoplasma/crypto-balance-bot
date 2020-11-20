@@ -14,78 +14,76 @@ var (
 
 // AccountService represents account related functionalities
 type AccountService interface {
-	UpdateBalances(a *Account) (map[string]*big.Int, error)
-	UpdateTxs(a *Account) (map[string][]string, error)
+	FetchAccountMovements(a *Account) ([]*AccountMovement, error)
 }
 
-// Transaction is a value object
-type Transaction struct {
-	Hash         string
-	BlockHeight  int
-	ChangeAmount *big.Int
+// AccountMovement represents the total change
+// made to Account in a certain block height
+type AccountMovement struct {
+	BlockHeight int
+	Changes     []*BalanceChange
 }
 
-// Balance represents numeric value and the currency
-type Balance struct {
+// BalanceChange represents a change in balance
+type BalanceChange struct {
 	Amount *big.Int
-	c      Currency
-}
-
-// ToString returns the string representation of balance
-func (b Balance) ToString() string {
-	return fmt.Sprintf("%s %s", b.Amount.Text(10), b.c.Symbol)
+	TxHash string
 }
 
 // Account in a value object (even it seems like an entity).
-// Only balance and tx related properties change over time
+// Only balance and index properties change over time
 // but they are actually for tracking purposes which is not
-// really a Address's property.
+// really Address's property.
 type Account struct {
-	address string
-	b       *Balance
-	txCount int
-	txs     map[string]*Transaction
+	address     string
+	balance     *big.Int
+	blockHeight int
+	c           Currency
 }
 
 // NewAccount creates a new instance of Account with the given address
 func NewAccount(c Currency, address string) *Account {
 	return &Account{
 		address: address,
-		b: &Balance{
-			Amount: big.NewInt(0),
-			c:      c,
-		},
+		balance: big.NewInt(0),
+		c:       c,
 	}
 }
 
-// Address returns address property
+// Address returns address of this account
 func (a *Account) Address() string {
 	return a.address
 }
 
-// Balance returns balance property
-func (a *Account) Balance() Balance {
-	return *a.b
+// Balance returns the last checked balance
+func (a *Account) Balance() *big.Int {
+	return a.balance
 }
 
-// TxCount returns TxCount property
-func (a *Account) TxCount() int {
-	return a.txCount
+// BalanceToString returns the string representation of balance
+func (a *Account) BalanceToString() string {
+	return fmt.Sprintf("%s %s", a.balance.Text(10), a.c.Symbol)
 }
 
-// AddTxs adds transactions to txs list of this account. Duplicates will be ignored
-func (a *Account) AddTxs(txs []*Transaction) {
-	for _, tx := range txs {
-		if a.txs[tx.Hash] != nil {
-			continue
-		}
+// BlockHeight returns the last block height balance is updated
+func (a *Account) BlockHeight() int {
+	return a.blockHeight
+}
 
-		a.txs[tx.Hash] = tx
-		a.txCount++
+// Currency returns the currency type of this account
+func (a *Account) Currency() Currency {
+	return a.c
+}
+
+// Apply applies a movement to the current state of this account
+func (a *Account) Apply(am *AccountMovement) {
+	if am == nil || am.BlockHeight <= a.blockHeight {
+		return
 	}
-}
 
-// UpdateBalance sets balance of this account
-func (a *Account) UpdateBalance(b *big.Int) {
-	a.b.Amount = b
+	for _, c := range am.Changes {
+		a.balance = a.balance.Add(a.balance, c.Amount)
+	}
+
+	a.blockHeight = am.BlockHeight
 }

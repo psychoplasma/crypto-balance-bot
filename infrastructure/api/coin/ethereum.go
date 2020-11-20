@@ -15,8 +15,8 @@ func (a *EthereumAPI) GetBalance(address string) (*big.Int, error) {
 	return nil, nil
 }
 
-// GetTransactions fetches transaction of the given address starting from the given index
-func (a *EthereumAPI) GetTransactions(address string, since int) ([]*domain.Transaction, error) {
+// GetAddressTxs fetches txs of the given address since the given block height(exclusive)
+func (a *EthereumAPI) GetAddressTxs(address string, sinceBlockHeight int) ([]*domain.AccountMovement, error) {
 	return nil, nil
 }
 

@@ -52,9 +52,18 @@ type Bot struct {
 	tb          *tb.Bot
 	subsApp     *application.SubscriptionApplication
 	currencyApp *application.CurrencyService
+	observer    *application.Observer
 }
 
-func NewBot(subsApp *application.SubscriptionApplication, currencyApp *application.CurrencyService) Bot {
+type TeleUser struct {
+	ID string
+}
+
+func (t TeleUser) Recipient() string {
+	return t.ID
+}
+
+func NewBot(subsApp *application.SubscriptionApplication, currencyApp *application.CurrencyService, observer *application.Observer) Bot {
 	c, err := readConfig("./config.yaml")
 	if err != nil {
 		log.Fatal(err)
@@ -72,7 +81,12 @@ func NewBot(subsApp *application.SubscriptionApplication, currencyApp *applicati
 		tb:          bot,
 		subsApp:     subsApp,
 		currencyApp: currencyApp,
+		observer:    observer,
 	}
+}
+
+func (b Bot) SendMessage(userID string, msg interface{}) {
+	b.tb.Send(TeleUser{ID: userID}, msg)
 }
 
 func (b Bot) RegisterCommands() {
@@ -108,6 +122,8 @@ func (b Bot) RegisterCommands() {
 			b.tb.Send(m.Sender, fmt.Sprintf("Invalid inputs, see command usage: \"%s\"", commands["subscribe_for_movement"].Usage))
 			return
 		}
+
+		b.observer.RegisterNotifier(m.Sender.Recipient(), application.Notifier(b.SendMessage))
 
 		if err := b.subsApp.SubscribeForMovement(
 			m.Sender.Recipient(),
