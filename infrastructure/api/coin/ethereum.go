@@ -1,34 +1,27 @@
 package coin
 
 import (
-	"errors"
 	"math/big"
+
+	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
 // EthereumAPI implements CurrencyAPI for Ethereum
 type EthereumAPI struct {
 }
 
-func (a *EthereumAPI) GetBalance(addressDesc string) (*big.Int, error) {
+// GetBalance fetches balance of the given address
+func (a *EthereumAPI) GetBalance(address string) (*big.Int, error) {
 	return nil, nil
 }
 
-func (a *EthereumAPI) GetTransactions(addressDesc string, since int) ([]string, error) {
+// GetTransactions fetches transaction of the given address starting from the given index
+func (a *EthereumAPI) GetTransactions(address string, since int) ([]*domain.Transaction, error) {
 	return nil, nil
 }
 
-func (a *EthereumAPI) CreateAddress(pubKey string) (string, error) {
-	return "", nil
-}
-
-func (a *EthereumAPI) DeriveAddressFromXPubKey(xPubKey string) ([]string, error) {
-	return nil, nil
-}
-
-func (a *EthereumAPI) ValidateAddress(addressDesc string) error {
+// ValidateAddress checks whether or not the given address is valid
+// and returns an error in case of invalid address
+func (a *EthereumAPI) ValidateAddress(address string) error {
 	return nil
-}
-
-func (a *EthereumAPI) ValidatePubKey(pubKey string) error {
-	return errors.New("not implemented")
 }

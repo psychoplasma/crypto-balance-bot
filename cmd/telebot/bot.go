@@ -142,10 +142,10 @@ func (b Bot) RegisterCommands() {
 		for _, s := range subs {
 			addrs := ""
 			log.Printf("Address count: %d\n", len(addrs))
-			for _, a := range s.Accounts {
+			for _, a := range s.Accounts() {
 				addrs += " : " + a.Address()
 			}
-			subsMsg += fmt.Sprintf("ID: `%s`, Addresses: `%s` \n", s.ID, addrs)
+			subsMsg += fmt.Sprintf("ID: `%s`, Addresses: `%s` \n", s.ID(), addrs)
 		}
 
 		log.Println(subsMsg)

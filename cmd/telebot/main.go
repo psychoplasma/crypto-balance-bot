@@ -5,8 +5,8 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistance/inmemory"
 )
 
-var subsRepo = inmemory.NewSubscriptionReposititory()
-var subsAppService = application.NewSubscriptionApplication(subsRepo)
+var subsAppService = application.NewSubscriptionApplication(
+	inmemory.NewSubscriptionReposititory())
 var currencyAppService = application.NewCurrencyService()
 
 func main() {

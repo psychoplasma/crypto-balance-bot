@@ -1,34 +1,27 @@
 package coin
 
 import (
-	"errors"
 	"math/big"
+
+	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
 // BitcoinAPI implements CurrencyAPI for Bitcoin
 type BitcoinAPI struct {
 }
 
-func (a *BitcoinAPI) GetBalance(addressDesc string) (*big.Int, error) {
+// GetBalance fetches balance of the given address
+func (a *BitcoinAPI) GetBalance(address string) (*big.Int, error) {
 	return nil, nil
 }
 
-func (a *BitcoinAPI) GetTransactions(addressDesc string, since int) ([]string, error) {
+// GetTransactions fetches transaction of the given address starting from the given index
+func (a *BitcoinAPI) GetTransactions(address string, index int) ([]*domain.Transaction, error) {
 	return nil, nil
 }
 
-func (a *BitcoinAPI) CreateAddress(pubKey string) (string, error) {
-	return "", nil
-}
-
-func (a *BitcoinAPI) DeriveAddressFromXPubKey(xPubKey string) ([]string, error) {
-	return nil, nil
-}
-
-func (a *BitcoinAPI) ValidateAddress(addressDesc string) error {
+// ValidateAddress checks whether or not the given address is valid
+// and returns an error in case of invalid address
+func (a *BitcoinAPI) ValidateAddress(address string) error {
 	return nil
-}
-
-func (a *BitcoinAPI) ValidatePubKey(pubKey string) error {
-	return errors.New("not implemented")
 }

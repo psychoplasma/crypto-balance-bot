@@ -14,7 +14,7 @@ type AccountService struct {
 // UpdateBalances updates balances in this account and returns any balance change
 func (as *AccountService) UpdateBalances(s *domain.Subscription) (map[string]*big.Int, error) {
 	changes := map[string]*big.Int{}
-	for _, a := range s.Accounts {
+	for _, a := range s.Accounts() {
 		b, err := as.cs.GetBalance(a.Address())
 		if err != nil {
 			log.Printf("failed to fetch balance for address(%s), %s", a.Address(), err)
@@ -38,7 +38,7 @@ func (as *AccountService) UpdateBalances(s *domain.Subscription) (map[string]*bi
 // in this account and returns the changes
 func (as *AccountService) UpdateTxs(a *domain.Subscription) (map[string][]*domain.Transaction, error) {
 	changes := map[string][]*domain.Transaction{}
-	for _, a := range a.Accounts {
+	for _, a := range a.Accounts() {
 		txs, err := as.cs.GetTransactions(a.Address(), a.TxCount())
 		if err != nil {
 			log.Printf("failed to fetch transactions for address(%s), %s", a.Address(), err)

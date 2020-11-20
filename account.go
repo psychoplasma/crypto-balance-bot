@@ -12,6 +12,7 @@ var (
 	ErrInvalidXPubKey  = errors.New("unable to derive addresses from the given master public key")
 )
 
+// AccountService represents account related functionalities
 type AccountService interface {
 	UpdateBalances(a *Account) (map[string]*big.Int, error)
 	UpdateTxs(a *Account) (map[string][]string, error)
@@ -21,14 +22,16 @@ type AccountService interface {
 type Transaction struct {
 	Hash         string
 	BlockHeight  int
-	changeAmount *big.Int
+	ChangeAmount *big.Int
 }
 
+// Balance represents numeric value and the currency
 type Balance struct {
 	Amount *big.Int
 	c      Currency
 }
 
+// ToString returns the string representation of balance
 func (b Balance) ToString() string {
 	return fmt.Sprintf("%s %s", b.Amount.Text(10), b.c.Symbol)
 }
@@ -55,18 +58,22 @@ func NewAccount(c Currency, address string) *Account {
 	}
 }
 
+// Address returns address property
 func (a *Account) Address() string {
 	return a.address
 }
 
+// Balance returns balance property
 func (a *Account) Balance() Balance {
 	return *a.b
 }
 
+// TxCount returns TxCount property
 func (a *Account) TxCount() int {
 	return a.txCount
 }
 
+// AddTxs adds transactions to txs list of this account. Duplicates will be ignored
 func (a *Account) AddTxs(txs []*Transaction) {
 	for _, tx := range txs {
 		if a.txs[tx.Hash] != nil {
@@ -78,6 +85,7 @@ func (a *Account) AddTxs(txs []*Transaction) {
 	}
 }
 
+// UpdateBalance sets balance of this account
 func (a *Account) UpdateBalance(b *big.Int) {
 	a.b.Amount = b
 }

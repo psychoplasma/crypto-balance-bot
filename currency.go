@@ -4,12 +4,13 @@ import "math/big"
 
 // CurrencyService represents API to fetch relavent info about account for the given currency
 type CurrencyService interface {
-	GetBalance(addressDesc string) (*big.Int, error)
-	GetTransactions(addressDesc string, since int) ([]*Transaction, error)
-	CreateAddress(pubKey string) (string, error)
-	DeriveAddressFromXPubKey(xPubKey string) ([]string, error)
+	// GetBalance fetches balance of the given address
+	GetBalance(address string) (*big.Int, error)
+	// GetTransactions fetches transaction of the given address starting from the given index
+	GetTransactions(address string, index int) ([]*Transaction, error)
+	// ValidateAddress checks whether or not the given address is valid
+	// and returns an error in case of invalid address
 	ValidateAddress(address string) error
-	ValidatePubKey(pubKey string) error
 }
 
 // Currency is a value object

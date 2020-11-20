@@ -63,27 +63,27 @@ func (r *SubscriptionReposititory) GetAllActivated() ([]*domain.Subscription, er
 // Add persists/updates the given subscription
 func (r *SubscriptionReposititory) Add(s *domain.Subscription) error {
 	// Do not allow to update UserID of an existing subscription
-	if r.subsByID[s.ID] != nil && r.subsByID[s.ID].UserID != s.UserID {
+	if r.subsByID[s.ID()] != nil && r.subsByID[s.ID()].UserID() != s.UserID() {
 		return errIndifferentUserID
 	}
 
 	// Increment the size if the item doesn't exit upon persistance
-	if r.subsByID[s.ID] == nil {
+	if r.subsByID[s.ID()] == nil {
 		// We're caching the size because everytime calling
 		// len() would have an overhead for a non-local slice
 		r.size++
 	}
-	r.subsByID[s.ID] = s
+	r.subsByID[s.ID()] = s
 
-	if r.subsByUserID[s.UserID] == nil {
-		r.subsByUserID[s.UserID] = make(map[string]*domain.Subscription)
+	if r.subsByUserID[s.UserID()] == nil {
+		r.subsByUserID[s.UserID()] = make(map[string]*domain.Subscription)
 	}
-	r.subsByUserID[s.UserID][s.ID] = s
+	r.subsByUserID[s.UserID()][s.ID()] = s
 
-	if s.Activated {
-		r.subsActivated[s.ID] = s
+	if s.IsActivated() {
+		r.subsActivated[s.ID()] = s
 	} else {
-		delete(r.subsActivated, s.ID)
+		delete(r.subsActivated, s.ID())
 	}
 
 	return nil
@@ -92,13 +92,13 @@ func (r *SubscriptionReposititory) Add(s *domain.Subscription) error {
 // Remove removes the given subscription from the persistance
 func (r *SubscriptionReposititory) Remove(s *domain.Subscription) error {
 	// Decrement the size if the item exists upon removal
-	if r.subsByID[s.ID] != nil {
+	if r.subsByID[s.ID()] != nil {
 		r.size--
 	}
 
-	delete(r.subsByID, s.ID)
-	delete(r.subsByUserID[s.UserID], s.ID)
-	delete(r.subsActivated, s.ID)
+	delete(r.subsByID, s.ID())
+	delete(r.subsByUserID[s.UserID()], s.ID())
+	delete(r.subsActivated, s.ID())
 
 	return nil
 }
