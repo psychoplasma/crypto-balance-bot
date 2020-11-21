@@ -1,4 +1,4 @@
-package persistance
+package persistence
 
 import "sync"
 

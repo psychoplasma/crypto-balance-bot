@@ -1,21 +1,9 @@
 package cryptobot
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 )
-
-// Represets error related to account operations
-var (
-	ErrInvalidAddrDesc = errors.New("invalid address descriptor")
-	ErrInvalidXPubKey  = errors.New("unable to derive addresses from the given master public key")
-)
-
-// AccountService represents account related functionalities
-type AccountService interface {
-	FetchAccountMovements(a *Account) ([]*AccountMovement, error)
-}
 
 // AccountMovement represents the total change
 // made to Account in a certain block height

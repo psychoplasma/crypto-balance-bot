@@ -6,25 +6,24 @@ import (
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/concurrency"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services/coin"
 )
 
-type Notifier func(recipient string, msg interface{})
+type Publisher interface {
+	PublishMessage(userID string, msg interface{})
+}
 
 type Observer struct {
-	as domain.AccountService
 	sr domain.SubscriptionRepository
 	w  *concurrency.Worker
-	ns map[string]Notifier
+	ps []Publisher
 }
 
 // NewObserver creates a new instance of Observer
-func NewObserver(
-	as domain.AccountService,
-	sr domain.SubscriptionRepository) *Observer {
+func NewObserver(sr domain.SubscriptionRepository) *Observer {
 	return &Observer{
-		as: as,
 		sr: sr,
-		ns: make(map[string]Notifier),
+		ps: []Publisher{},
 		w:  concurrency.NewWorker(100, time.Second*30),
 	}
 }
@@ -32,7 +31,7 @@ func NewObserver(
 // Observe starts to observe for changes
 func (o *Observer) Observe() error {
 	for true {
-		log.Panicln("Observing...")
+		log.Printf("Observing...")
 		if err := o.observe(); err != nil {
 			break
 		}
@@ -43,9 +42,9 @@ func (o *Observer) Observe() error {
 	return nil
 }
 
-// RegisterNotifier registers a notifier. Notifiers with the same id will be replaced
-func (o *Observer) RegisterNotifier(id string, n Notifier) {
-	o.ns[id] = n
+// RegisterPublisher registers a publisher
+func (o *Observer) RegisterPublisher(p Publisher) {
+	o.ps = append(o.ps, p)
 }
 
 func (o *Observer) observe() error {
@@ -78,19 +77,20 @@ func (o *Observer) checkForChange(s *domain.Subscription) interface{} {
 		return nil
 	}
 
-	changes := make(map[string][]*domain.AccountMovement)
+	changes := make(map[*domain.Account][]*domain.AccountMovement)
 	if s.Type() == domain.MovementSubscription {
 		for _, a := range s.Accounts() {
-			movements, err := o.as.FetchAccountMovements(a)
+			movements, err := o.fetchAccountMovements(a)
 			if err != nil {
 				log.Println(err.Error())
+				continue
 			}
 
 			if movements == nil || len(movements) == 0 {
 				continue
 			}
 
-			changes[a.Address()] = movements
+			changes[a] = movements
 		}
 
 		return changes
@@ -99,12 +99,30 @@ func (o *Observer) checkForChange(s *domain.Subscription) interface{} {
 	return nil
 }
 
+func (o *Observer) fetchAccountMovements(a *domain.Account) ([]*domain.AccountMovement, error) {
+	currencyService, err := coin.Factory(a.Currency())
+	if err != nil {
+		return nil, err
+	}
+
+	ms, err := currencyService.GetAddressTxs(a.Address(), a.BlockHeight())
+	if err != nil {
+		log.Printf("failed to fetch movements for address(%s), %s", a.Address(), err)
+		return nil, err
+	}
+
+	return ms, nil
+}
+
 func (o *Observer) notify(userID string, i interface{}) {
-	if n, exist := o.ns[userID]; exist && n != nil {
-		n(userID, i)
+	for _, p := range o.ps {
+		if p == nil {
+			continue
+		}
+		p.PublishMessage(userID, i)
 	}
 }
 
 func (o *Observer) clear() {
-	o.ns = make(map[string]Notifier)
+	o.ps = []Publisher{}
 }

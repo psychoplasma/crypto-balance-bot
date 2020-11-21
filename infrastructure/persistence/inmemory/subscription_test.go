@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistance/inmemory"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/inmemory"
 )
 
 var subsRepo = inmemory.NewSubscriptionReposititory()

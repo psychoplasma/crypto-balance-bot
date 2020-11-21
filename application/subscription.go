@@ -17,24 +17,28 @@ func NewSubscriptionApplication(r domain.SubscriptionRepository) *SubscriptionAp
 }
 
 // SubscribeForValue creates a new value-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string, c domain.Currency, addrDesc string, against domain.Currency) error {
+func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string, c domain.Currency, against domain.Currency, addrDescs []string) error {
 	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.ValueSubscription, against)
 	if err != nil {
 		return err
 	}
-	s.AddAccount(c, addrDesc)
+	for _, addr := range addrDescs {
+		s.AddAccount(c, addr)
+	}
 	s.Activate()
 
 	return sa.r.Add(s)
 }
 
 // SubscribeForMovement creates a new movement-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name string, c domain.Currency, addrDesc string) error {
+func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name string, c domain.Currency, addrDescs []string) error {
 	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.MovementSubscription, domain.Currency{})
 	if err != nil {
 		return err
 	}
-	s.AddAccount(c, addrDesc)
+	for _, addr := range addrDescs {
+		s.AddAccount(c, addr)
+	}
 	s.Activate()
 
 	return sa.r.Add(s)

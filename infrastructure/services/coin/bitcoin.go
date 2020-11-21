@@ -22,7 +22,10 @@ func (a *BitcoinAPI) GetAddressTxs(address string, sinceBlockHeight int) ([]*dom
 			BlockHeight: 1,
 			Changes: []*domain.BalanceChange{
 				{
-					Amount: big.NewInt(5),
+					Amount: big.NewInt(5000),
+				},
+				{
+					Amount: big.NewInt(-200),
 				},
 			},
 		},
@@ -30,7 +33,7 @@ func (a *BitcoinAPI) GetAddressTxs(address string, sinceBlockHeight int) ([]*dom
 			BlockHeight: 2,
 			Changes: []*domain.BalanceChange{
 				{
-					Amount: big.NewInt(-3),
+					Amount: big.NewInt(-3000),
 				},
 			},
 		},
@@ -38,7 +41,7 @@ func (a *BitcoinAPI) GetAddressTxs(address string, sinceBlockHeight int) ([]*dom
 			BlockHeight: 3,
 			Changes: []*domain.BalanceChange{
 				{
-					Amount: big.NewInt(8),
+					Amount: big.NewInt(8200),
 				},
 			},
 		},
