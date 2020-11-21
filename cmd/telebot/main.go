@@ -21,8 +21,6 @@ type Config struct {
 var subsRepo = inmemory.NewSubscriptionReposititory()
 var subsAppService = application.NewSubscriptionApplication(subsRepo)
 var currencyAppService = application.NewCurrencyService()
-var movementPublisher = adapter.NewTelegramPublisher(
-	"873977886:AAEJetV4LiotkaqDo3NGOrZXQ2BWEA2U8ts", notification.MovementFormatter{})
 
 func main() {
 	c, err := readConfig("./config.yaml")
