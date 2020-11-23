@@ -2,7 +2,6 @@ package notification
 
 import (
 	"fmt"
-	"log"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 )
@@ -10,9 +9,10 @@ import (
 type MovementFormatter struct{}
 
 func (mf MovementFormatter) Format(i interface{}) string {
-	movementMap, s := i.(map[*domain.Account][]*domain.AccountMovement)
-	if !s {
-		log.Printf("cannot convert message: %#v to map[string][]*domain.AccountMovement\n", i)
+	movementMap, _ := i.(map[*domain.Account][]*domain.AccountMovement)
+
+	if len(movementMap) == 0 {
+		return ""
 	}
 
 	msg := "```\n"

@@ -93,7 +93,7 @@ func (s *Subscription) Accounts() map[string]*Account {
 	return s.accs
 }
 
-// AddAccount adds a new account to this subscriptions. Duplicates will be ignored
+// AddAccount adds a new account to this subscriptions. Duplicates will be overwritten
 func (s *Subscription) AddAccount(c Currency, address string) {
 	if s.accs[address] != nil {
 		return

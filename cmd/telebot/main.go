@@ -9,7 +9,7 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/application"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/notification"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/inmemory"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
 	"gopkg.in/yaml.v2"
 )
 
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	o := application.NewObserver(subsRepo)
-	o.RegisterPublisher(adapter.NewTelegramPublisher(c.Token, notification.MovementFormatter{}))
+	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter{}))
 	go o.Observe()
 
 	b := NewBot(c, subsAppService, currencyAppService)
