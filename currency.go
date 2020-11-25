@@ -2,8 +2,8 @@ package cryptobot
 
 // CurrencyService represents API to fetch relavent info about account for the given currency
 type CurrencyService interface {
-	// GetAddressTxs fetches txs of the given address since the given block height(exclusive)
-	GetAddressTxs(address string, sinceBlockHeight int) ([]*AccountMovement, error)
+	// GetTxsOfAddress fetches txs of the given address since the given block height(exclusive)
+	GetTxsOfAddress(address string, sinceBlockHeight int) ([]*AccountMovement, error)
 }
 
 // Currency is a value object

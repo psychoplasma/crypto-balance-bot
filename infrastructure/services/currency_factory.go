@@ -1,14 +1,12 @@
 package services
 
 import (
-	"errors"
-
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchaindotcom"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/etherscanio"
 )
 
-var errUnknownCurrency = errors.New("unknown currency")
-
+// Implemented currencies
 var (
 	BTC = domain.Currency{
 		Decimal: 8,
@@ -20,16 +18,16 @@ var (
 	}
 )
 
-// CurrencyFactory gets the corresponding currency API implementation
-func CurrencyFactory(c domain.Currency) (domain.CurrencyService, error) {
-	switch c {
-	case BTC:
-		return &blockchaindotcom.BitcoinAPI{
-			T: blockchaindotcom.BitcoinTranslator{},
-		}, nil
-	default:
-		return nil, errUnknownCurrency
-	}
+// CurrencyFactory keeps implemented currencies
+var CurrencyFactory = map[string]*domain.Currency{
+	"btc": &BTC,
+	"eth": &ETH,
+}
+
+// CurrencyServiceFactory keeps implemented currency services
+var CurrencyServiceFactory = map[string]domain.CurrencyService{
+	"btc": blockchaindotcom.NewBitcoinAPI(blockchaindotcom.BitcoinTranslator{}),
+	"eth": etherscanio.NewEthereumAPI(etherscanio.EthereumTranslator{}),
 }
 
 // Translator interface declares translation from outside service output to currency service inputs

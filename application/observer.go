@@ -9,10 +9,12 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
+// Publisher is
 type Publisher interface {
 	PublishMessage(userID string, msg interface{})
 }
 
+// Observer observes for account movements
 type Observer struct {
 	sr domain.SubscriptionRepository
 	w  *concurrency.Worker
@@ -30,8 +32,9 @@ func NewObserver(sr domain.SubscriptionRepository) *Observer {
 
 // Observe starts observing for changes and blocks the current working thread
 func (o *Observer) Observe() {
+	log.Printf("Starting the observer for movement changes")
+
 	for true {
-		log.Printf("Observing...")
 		if err := o.observe(); err != nil {
 			log.Printf("exiting observer with an error: %s", err.Error())
 			break
@@ -57,7 +60,7 @@ func (o *Observer) observe() error {
 	// a change in movement for each in parallel
 	for _, s := range subs {
 		if _, err := o.w.Run(func() {
-			if c := o.checkForChange(s); c != nil {
+			if c := o.checkForAccountMovements(s); c != nil {
 				o.notify(s.UserID(), c)
 			}
 		}); err != nil {
@@ -70,42 +73,33 @@ func (o *Observer) observe() error {
 	return nil
 }
 
-func (o *Observer) checkForChange(s *domain.Subscription) interface{} {
+func (o *Observer) checkForAccountMovements(s *domain.Subscription) interface{} {
+	// FIXME: subscriptions fecthed from repo should be movement subscriptions, and shoudn't need to check the type here
+	if s.Type() != domain.MovementSubscription {
+		return nil
+	}
+
 	changes := make(map[*domain.Account][]*domain.AccountMovement)
-
-	if s.Type() == domain.MovementSubscription {
-		for _, a := range s.Accounts() {
-			movements, err := o.fetchAccountMovements(a)
-			if err != nil {
-				log.Printf("failed to fetch movements for address(%s), %s", a.Address(), err)
-				continue
-			}
-
-			if movements == nil || len(movements) == 0 {
-				continue
-			}
-
-			changes[a] = movements
+	for _, a := range s.Accounts() {
+		movements, err := services.
+			CurrencyServiceFactory[a.Currency().Symbol].
+			GetTxsOfAddress(a.Address(), a.BlockHeight())
+		if err != nil {
+			log.Printf("failed to fetch movements for address(%s), %s", a.Address(), err)
+			continue
 		}
 
-		return changes
+		if movements == nil || len(movements) == 0 {
+			continue
+		}
+
+		// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
+		a.Apply(movements)
+
+		changes[a] = movements
 	}
 
-	return nil
-}
-
-func (o *Observer) fetchAccountMovements(a *domain.Account) ([]*domain.AccountMovement, error) {
-	currencyService, err := services.CurrencyFactory(a.Currency())
-	if err != nil {
-		return nil, err
-	}
-
-	ms, err := currencyService.GetAddressTxs(a.Address(), a.BlockHeight())
-	if err != nil {
-		return nil, err
-	}
-
-	return ms, nil
+	return changes
 }
 
 func (o *Observer) notify(userID string, i interface{}) {
