@@ -17,7 +17,7 @@ func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) [
 
 	for _, tx := range txs {
 		// Do not include reverted/failed transactions
-		if tx.Status == "1" {
+		if tx.Status != transactionStatusSuccess {
 			continue
 		}
 

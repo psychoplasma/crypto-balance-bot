@@ -19,8 +19,7 @@ func TestGetTxsOfAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f := notification.MovementFormatter{}
-	t.Log(f.Format(map[*domain.Account][]*domain.AccountMovement{
+	t.Log(notification.MovementFormatter(map[*domain.Account][]*domain.AccountMovement{
 		domain.NewAccount(domain.Currency{}, "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"): mv,
 	}))
 

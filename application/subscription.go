@@ -1,7 +1,14 @@
 package application
 
 import (
+	"errors"
+
 	domain "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
+)
+
+var (
+	errInexistentCurrency = errors.New("inexistent currency")
 )
 
 // SubscriptionApplication exposes application services for subscription entity
@@ -17,31 +24,48 @@ func NewSubscriptionApplication(r domain.SubscriptionRepository) *SubscriptionAp
 }
 
 // SubscribeForValue creates a new value-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string, c domain.Currency, against domain.Currency, addrDescs []string) error {
-	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.ValueSubscription, against)
+func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string, currencySymbol string, againstCurrencySymbol string, addrDescs []string) error {
+	c, e := services.CurrencyFactory[currencySymbol]
+	if !e {
+		return errInexistentCurrency
+	}
+
+	ac, e := services.CurrencyFactory[currencySymbol]
+	if !e {
+		return errInexistentCurrency
+	}
+
+	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.ValueSubscription, *ac)
 	if err != nil {
 		return err
 	}
+
 	for _, addr := range addrDescs {
-		s.AddAccount(c, addr)
+		s.AddAccount(*c, addr)
 	}
 	s.Activate()
 
-	return sa.r.Add(s)
+	return sa.r.Save(s)
 }
 
 // SubscribeForMovement creates a new movement-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name string, c domain.Currency, addrDescs []string) error {
+func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name string, currencySymbol string, addrDescs []string) error {
+	c, e := services.CurrencyFactory[currencySymbol]
+	if !e {
+		return errInexistentCurrency
+	}
+
 	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.MovementSubscription, domain.Currency{})
 	if err != nil {
 		return err
 	}
+
 	for _, addr := range addrDescs {
-		s.AddAccount(c, addr)
+		s.AddAccount(*c, addr)
 	}
 	s.Activate()
 
-	return sa.r.Add(s)
+	return sa.r.Save(s)
 }
 
 // Unsubscribe removes the given subscription
@@ -53,8 +77,8 @@ func (sa *SubscriptionApplication) Unsubscribe(subscriptionID string) error {
 	return sa.r.Remove(s)
 }
 
-// UnsubscribeAll removes all subscription belogs to the given user
-func (sa *SubscriptionApplication) UnsubscribeAll(userID string) error {
+// UnsubscribeAllForUser removes all subscription belogs to the given user
+func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
 	subs, err := sa.r.GetAllForUser(userID)
 	if err != nil {
 		return err
@@ -76,7 +100,7 @@ func (sa *SubscriptionApplication) ActivateSubscription(subscriptionID string) e
 		return err
 	}
 	s.Activate()
-	sa.r.Add(s)
+	sa.r.Save(s)
 
 	return nil
 }
@@ -88,7 +112,7 @@ func (sa *SubscriptionApplication) DeactivateSubscription(subscriptionID string)
 		return err
 	}
 	s.Deactivate()
-	sa.r.Add(s)
+	sa.r.Save(s)
 
 	return nil
 }
@@ -101,9 +125,4 @@ func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscript
 // GetSubscriptionsForUser returns the details of all subscriptions for the given user
 func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*domain.Subscription, error) {
 	return sa.r.GetAllForUser(userID)
-}
-
-// GetActiveSubscriptions returns the all active subscriptions
-func (sa *SubscriptionApplication) GetActiveSubscriptions() ([]*domain.Subscription, error) {
-	return sa.r.GetAllActivated()
 }

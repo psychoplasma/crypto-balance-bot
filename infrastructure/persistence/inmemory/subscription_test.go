@@ -20,14 +20,17 @@ func populateTestData() {
 	s3, _ := domain.NewSubscription("3", "user2", "", domain.MovementSubscription, domain.Currency{})
 	s3.Activate()
 
-	s4, _ := domain.NewSubscription("4", "user2", "", domain.MovementSubscription, domain.Currency{})
+	s4, _ := domain.NewSubscription("4", "user2", "", domain.ValueSubscription, domain.Currency{})
 	s4.Activate()
 
-	testSubs = append(testSubs, s1, s2, s3, s4)
-	subsRepo.Add(s1)
-	subsRepo.Add(s2)
-	subsRepo.Add(s3)
-	subsRepo.Add(s4)
+	s5, _ := domain.NewSubscription("5", "user3", "", domain.ValueSubscription, domain.Currency{})
+
+	testSubs = append(testSubs, s1, s2, s3, s4, s5)
+	subsRepo.Save(s1)
+	subsRepo.Save(s2)
+	subsRepo.Save(s3)
+	subsRepo.Save(s4)
+	subsRepo.Save(s5)
 }
 
 func TestMain(m *testing.M) {
@@ -63,20 +66,29 @@ func TestGetAllForUser(t *testing.T) {
 	}
 }
 
-func TestGetAllAcivated(t *testing.T) {
-	expectedCount := 3
-	subs, _ := subsRepo.GetAllActivated()
+func TestGetAllAcivatedMovements(t *testing.T) {
+	expectedCount := 2
+	subs, _ := subsRepo.GetAllActivatedMovements()
 
 	if len(subs) != expectedCount {
 		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
 	}
 }
 
-func TestAdd(t *testing.T) {
-	expectedSize := len(testSubs) + 1
-	testItem, _ := domain.NewSubscription("5", "user3", "", domain.MovementSubscription, domain.Currency{})
+func TestGetAllAcivatedValues(t *testing.T) {
+	expectedCount := 1
+	subs, _ := subsRepo.GetAllActivatedValues()
 
-	subsRepo.Add(testItem)
+	if len(subs) != expectedCount {
+		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
+	}
+}
+
+func TestSave(t *testing.T) {
+	expectedSize := len(testSubs) + 1
+	testItem, _ := domain.NewSubscription("6", "user3", "", domain.MovementSubscription, domain.Currency{})
+
+	subsRepo.Save(testItem)
 
 	if subsRepo.Size() != expectedSize {
 		t.Fatalf("expected size %d, but got %d", expectedSize, subsRepo.Size())
@@ -95,7 +107,7 @@ func TestAdd(t *testing.T) {
 func TestAdd_ExistingSubscription_WithDifferentUserID(t *testing.T) {
 	testItem, _ := domain.NewSubscription("1", "user3", "", domain.MovementSubscription, domain.Currency{})
 
-	if err := subsRepo.Add(testItem); err == nil {
+	if err := subsRepo.Save(testItem); err == nil {
 		t.Fatalf("expecting an error, but got nothing")
 	}
 }

@@ -28,6 +28,11 @@ var commands = map[string]command{
 		Description:    "",
 		ParameterCount: 1,
 	},
+	"unsubscribe_all": {
+		Usage:          "/unsubscribe_all",
+		Description:    "",
+		ParameterCount: 0,
+	},
 	"my_subscriptions": {
 		Usage:          "/my_subscriptions",
 		Description:    "",
@@ -41,13 +46,14 @@ type command struct {
 	ParameterCount int
 }
 
+// Bot is TelegramBot receives subscription related commands from a user and returns the corresponding responses
 type Bot struct {
-	tb          *tb.Bot
-	subsApp     *application.SubscriptionApplication
-	currencyApp *application.CurrencyService
+	tb      *tb.Bot
+	subsApp *application.SubscriptionApplication
 }
 
-func NewBot(c *Config, subsApp *application.SubscriptionApplication, currencyApp *application.CurrencyService) Bot {
+// NewBot creates a new instance of Bot
+func NewBot(c *Config, subsApp *application.SubscriptionApplication) Bot {
 	bot, err := tb.NewBot(tb.Settings{
 		Token:  c.Token,
 		Poller: &tb.LongPoller{Timeout: c.PollingTime * time.Second},
@@ -57,17 +63,18 @@ func NewBot(c *Config, subsApp *application.SubscriptionApplication, currencyApp
 	}
 
 	return Bot{
-		tb:          bot,
-		subsApp:     subsApp,
-		currencyApp: currencyApp,
+		tb:      bot,
+		subsApp: subsApp,
 	}
 }
 
+// Start starts the bot
 func (b Bot) Start() {
 	b.registerCommands()
 	b.tb.Start()
 }
 
+// Stop stops the bot gracefully
 func (b Bot) Stop() {
 	b.tb.Stop()
 }
@@ -87,8 +94,8 @@ func (b Bot) registerCommands() {
 		if err := b.subsApp.SubscribeForValue(
 			m.Sender.Recipient(),
 			msg[0],
-			*b.currencyApp.GetCurrency(msg[1]),
-			*b.currencyApp.GetCurrency(msg[2]),
+			msg[1],
+			msg[2],
 			msg[3:],
 		); err != nil {
 			log.Printf("failed to subscribe for value, %s", err.Error())
@@ -109,7 +116,7 @@ func (b Bot) registerCommands() {
 		if err := b.subsApp.SubscribeForMovement(
 			m.Sender.Recipient(),
 			msg[0],
-			*b.currencyApp.GetCurrency(msg[1]),
+			msg[1],
 			msg[2:],
 		); err != nil {
 			log.Printf("failed to subscribe for value, %s", err.Error())
@@ -119,10 +126,14 @@ func (b Bot) registerCommands() {
 	})
 
 	b.tb.Handle("/unsubscribe", func(m *tb.Message) {
-		fmt.Printf("message payload: %#v\n", m)
-
 		if err := b.subsApp.Unsubscribe(m.Payload); err != nil {
 			b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe, %s", err.Error()))
+		}
+	})
+
+	b.tb.Handle("/unsubscribe_all", func(m *tb.Message) {
+		if err := b.subsApp.UnsubscribeAllForUser(m.Sender.Recipient()); err != nil {
+			b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe all, %s", err.Error()))
 		}
 	})
 

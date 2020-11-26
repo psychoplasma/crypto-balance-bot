@@ -32,9 +32,10 @@ type Account struct {
 // NewAccount creates a new instance of Account with the given address
 func NewAccount(c Currency, address string) *Account {
 	return &Account{
-		address: address,
-		balance: big.NewInt(0),
-		c:       c,
+		address:     address,
+		balance:     big.NewInt(0),
+		blockHeight: -1,
+		c:           c,
 	}
 }
 

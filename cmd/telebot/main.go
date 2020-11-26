@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Config is a configuration for telegram bot
 type Config struct {
 	Token       string        `yaml:"token"`
 	PollingTime time.Duration `yaml:"polling-time"`
@@ -20,7 +21,6 @@ type Config struct {
 
 var subsRepo = inmemory.NewSubscriptionReposititory()
 var subsAppService = application.NewSubscriptionApplication(subsRepo)
-var currencyAppService = application.NewCurrencyService()
 
 func main() {
 	c, err := readConfig("./config.yaml")
@@ -28,11 +28,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	o := application.NewObserver(subsRepo)
-	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter{}))
+	o := application.NewMovementObserver(subsRepo)
+	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter))
 	go o.Observe()
 
-	b := NewBot(c, subsAppService, currencyAppService)
+	b := NewBot(c, subsAppService)
 	b.Start()
 }
 

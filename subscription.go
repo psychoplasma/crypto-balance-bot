@@ -25,8 +25,9 @@ type SubscriptionRepository interface {
 	Size() int
 	Get(id string) (*Subscription, error)
 	GetAllForUser(userID string) ([]*Subscription, error)
-	GetAllActivated() ([]*Subscription, error)
-	Add(s *Subscription) error
+	GetAllActivatedMovements() ([]*Subscription, error)
+	GetAllActivatedValues() ([]*Subscription, error)
+	Save(s *Subscription) error
 	Remove(s *Subscription) error
 }
 
@@ -38,7 +39,7 @@ type Subscription struct {
 	stype     SubscriptionType
 	activated bool
 	ac        Currency
-	accs      map[string]*Account
+	accs      []*Account
 }
 
 // NewSubscription creates a new subscription
@@ -57,7 +58,7 @@ func NewSubscription(id string, userID string, name string, stype SubscriptionTy
 		name:   name,
 		stype:  stype,
 		ac:     against,
-		accs:   make(map[string]*Account),
+		accs:   make([]*Account, 0),
 	}
 
 	return s, nil
@@ -89,17 +90,19 @@ func (s *Subscription) IsActivated() bool {
 }
 
 // Accounts returns accounts property
-func (s *Subscription) Accounts() map[string]*Account {
+func (s *Subscription) Accounts() []*Account {
 	return s.accs
 }
 
 // AddAccount adds a new account to this subscriptions. Duplicates will be overwritten
 func (s *Subscription) AddAccount(c Currency, address string) {
-	if s.accs[address] != nil {
-		return
+	for _, a := range s.Accounts() {
+		if a.Address() == address {
+			return
+		}
 	}
 
-	s.accs[address] = NewAccount(c, address)
+	s.accs = append(s.accs, NewAccount(c, address))
 }
 
 // Activate activates the subscription. User will start getting notifications about this subscription

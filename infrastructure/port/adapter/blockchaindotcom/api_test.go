@@ -18,8 +18,7 @@ func TestGetTxsOfAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f := notification.MovementFormatter{}
-	t.Log(f.Format(map[*cryptobot.Account][]*cryptobot.AccountMovement{
+	t.Log(notification.MovementFormatter(map[*cryptobot.Account][]*cryptobot.AccountMovement{
 		cryptobot.NewAccount(cryptobot.Currency{}, "1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F"): mv,
 	}))
 

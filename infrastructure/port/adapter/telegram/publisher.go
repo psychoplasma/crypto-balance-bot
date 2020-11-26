@@ -15,8 +15,8 @@ func (r recipient) Recipient() string {
 
 // Publisher is a message publisher using Telegram API
 type Publisher struct {
-	teleBot *telegram.Bot
-	fmt     notification.Formatter
+	teleBot   *telegram.Bot
+	formatter notification.Formatter
 }
 
 // NewPublisher creates a new instance of TelegramPublisher
@@ -29,14 +29,14 @@ func NewPublisher(token string, fmt notification.Formatter) *Publisher {
 	}
 
 	return &Publisher{
-		teleBot: bot,
-		fmt:     fmt,
+		teleBot:   bot,
+		formatter: fmt,
 	}
 }
 
 // PublishMessage sends the given message to the given telegram user
 func (tp *Publisher) PublishMessage(userID string, i interface{}) {
-	msg := tp.fmt.Format(i)
+	msg := tp.formatter(i)
 
 	if msg == "" {
 		return

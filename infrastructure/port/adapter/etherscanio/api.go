@@ -7,11 +7,14 @@ import (
 	"net/http"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter"
 )
 
 var (
 	pageLimit = 50
 )
+
+const transactionStatusSuccess = "1"
 
 // Response is a data structure returning from Etherscan.io API
 type Response struct {
@@ -32,11 +35,11 @@ type Transaction struct {
 
 // EthereumAPI implements CurrencyAPI for Bitcoin
 type EthereumAPI struct {
-	t EthereumTranslator
+	t adapter.Translator
 }
 
 // NewEthereumAPI creates a new instance of EthereumAPI
-func NewEthereumAPI(t EthereumTranslator) *EthereumAPI {
+func NewEthereumAPI(t adapter.Translator) *EthereumAPI {
 	return &EthereumAPI{
 		t: t,
 	}
@@ -48,8 +51,6 @@ func (a *EthereumAPI) GetTxsOfAddress(address string, sinceBlockHeight int) ([]*
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("%+v", txs)
 
 	return a.t.ToAccountMovements(address, txs), nil
 }

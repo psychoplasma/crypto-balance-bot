@@ -11,19 +11,21 @@ var errIndifferentUserID = errors.New("updating UserID field of an existing subs
 
 // SubscriptionReposititory is an in-memory implementation of SubscriptionReposititory
 type SubscriptionReposititory struct {
-	subsByUserID  map[string]map[string]*domain.Subscription
-	subsByID      map[string]*domain.Subscription
-	subsActivated map[string]*domain.Subscription
-	size          int
+	subsByUserID           map[string]map[string]*domain.Subscription
+	subsByID               map[string]*domain.Subscription
+	subsActivatedMovements map[string]*domain.Subscription
+	subsActivatedValues    map[string]*domain.Subscription
+	size                   int
 }
 
 // NewSubscriptionReposititory creates a new instance of SubscriptionReposititory
 func NewSubscriptionReposititory() *SubscriptionReposititory {
 	return &SubscriptionReposititory{
-		subsByUserID:  make(map[string]map[string]*domain.Subscription),
-		subsByID:      make(map[string]*domain.Subscription),
-		subsActivated: make(map[string]*domain.Subscription),
-		size:          0,
+		subsByUserID:           make(map[string]map[string]*domain.Subscription),
+		subsByID:               make(map[string]*domain.Subscription),
+		subsActivatedMovements: make(map[string]*domain.Subscription),
+		subsActivatedValues:    make(map[string]*domain.Subscription),
+		size:                   0,
 	}
 }
 
@@ -51,17 +53,26 @@ func (r *SubscriptionReposititory) GetAllForUser(userID string) ([]*domain.Subsc
 	return subs, nil
 }
 
-// GetAllActivated returns all activated subscriptions
-func (r *SubscriptionReposititory) GetAllActivated() ([]*domain.Subscription, error) {
+// GetAllActivatedMovements returns all activated movement subscriptions
+func (r *SubscriptionReposititory) GetAllActivatedMovements() ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for _, s := range r.subsActivated {
+	for _, s := range r.subsActivatedMovements {
 		subs = append(subs, s)
 	}
 	return subs, nil
 }
 
-// Add persists/updates the given subscription
-func (r *SubscriptionReposititory) Add(s *domain.Subscription) error {
+// GetAllActivatedValues returns all activated value subscriptions
+func (r *SubscriptionReposititory) GetAllActivatedValues() ([]*domain.Subscription, error) {
+	subs := make([]*domain.Subscription, 0)
+	for _, s := range r.subsActivatedValues {
+		subs = append(subs, s)
+	}
+	return subs, nil
+}
+
+// Save persists/updates the given subscription
+func (r *SubscriptionReposititory) Save(s *domain.Subscription) error {
 	// Do not allow to update UserID of an existing subscription
 	if r.subsByID[s.ID()] != nil && r.subsByID[s.ID()].UserID() != s.UserID() {
 		return errIndifferentUserID
@@ -80,10 +91,20 @@ func (r *SubscriptionReposititory) Add(s *domain.Subscription) error {
 	}
 	r.subsByUserID[s.UserID()][s.ID()] = s
 
-	if s.IsActivated() {
-		r.subsActivated[s.ID()] = s
-	} else {
-		delete(r.subsActivated, s.ID())
+	if s.Type() == domain.MovementSubscription {
+		if s.IsActivated() {
+			r.subsActivatedMovements[s.ID()] = s
+		} else {
+			delete(r.subsActivatedMovements, s.ID())
+		}
+	}
+
+	if s.Type() == domain.ValueSubscription {
+		if s.IsActivated() {
+			r.subsActivatedValues[s.ID()] = s
+		} else {
+			delete(r.subsActivatedValues, s.ID())
+		}
 	}
 
 	return nil
@@ -98,7 +119,8 @@ func (r *SubscriptionReposititory) Remove(s *domain.Subscription) error {
 
 	delete(r.subsByID, s.ID())
 	delete(r.subsByUserID[s.UserID()], s.ID())
-	delete(r.subsActivated, s.ID())
+	delete(r.subsActivatedMovements, s.ID())
+	delete(r.subsActivatedValues, s.ID())
 
 	return nil
 }

@@ -19,7 +19,7 @@ func TestApply(t *testing.T) {
 	addr := "test-addr-1"
 	c := domain.Currency{
 		Symbol:  "btc",
-		Decimal: 8,
+		Decimal: big.NewInt(8),
 	}
 	a := domain.NewAccount(c, addr)
 	initBalance := big.NewInt(a.Balance().Int64())
@@ -52,7 +52,7 @@ func TestApply_WithAlreadyAppliedMovement(t *testing.T) {
 	addr := "test-addr-1"
 	c := domain.Currency{
 		Symbol:  "btc",
-		Decimal: 8,
+		Decimal: big.NewInt(8),
 	}
 	a := domain.NewAccount(c, addr)
 	initBalance := big.NewInt(a.Balance().Int64())

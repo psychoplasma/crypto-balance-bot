@@ -24,8 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	o := application.NewObserver(inmemory.NewSubscriptionReposititory())
-	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter{}))
+	o := application.NewMovementObserver(inmemory.NewSubscriptionReposititory())
+	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter))
 	o.Observe()
 }
 

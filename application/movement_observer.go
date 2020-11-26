@@ -14,16 +14,16 @@ type Publisher interface {
 	PublishMessage(userID string, msg interface{})
 }
 
-// Observer observes for account movements
-type Observer struct {
+// MovementObserver observes for account movements
+type MovementObserver struct {
 	sr domain.SubscriptionRepository
 	w  *concurrency.Worker
 	ps []Publisher
 }
 
-// NewObserver creates a new instance of Observer
-func NewObserver(sr domain.SubscriptionRepository) *Observer {
-	return &Observer{
+// NewMovementObserver creates a new instance of MovementObserver
+func NewMovementObserver(sr domain.SubscriptionRepository) *MovementObserver {
+	return &MovementObserver{
 		sr: sr,
 		ps: []Publisher{},
 		w:  concurrency.NewWorker(100, time.Second*30),
@@ -31,27 +31,26 @@ func NewObserver(sr domain.SubscriptionRepository) *Observer {
 }
 
 // Observe starts observing for changes and blocks the current working thread
-func (o *Observer) Observe() {
-	log.Printf("Starting the observer for movement changes")
+func (o *MovementObserver) Observe() {
+	log.Printf("Starting the MovementObserver for movement changes")
 
 	for true {
 		if err := o.observe(); err != nil {
-			log.Printf("exiting observer with an error: %s", err.Error())
+			log.Printf("exiting MovementObserver with an error: %s", err.Error())
 			break
 		}
 
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 30)
 	}
 }
 
 // RegisterPublisher registers a publisher
-func (o *Observer) RegisterPublisher(p Publisher) {
+func (o *MovementObserver) RegisterPublisher(p Publisher) {
 	o.ps = append(o.ps, p)
 }
 
-func (o *Observer) observe() error {
-	// Get all the activated subscriptions from the repository
-	subs, err := o.sr.GetAllActivated()
+func (o *MovementObserver) observe() error {
+	subs, err := o.sr.GetAllActivatedMovements()
 	if err != nil {
 		return err
 	}
@@ -59,9 +58,13 @@ func (o *Observer) observe() error {
 	// And then check whether or not there is
 	// a change in movement for each in parallel
 	for _, s := range subs {
+		log.Printf("subs: %+v\n", s)
+		// FIXME: shouldn't pass by reference, will cause data corruption in parallel processing
+		ss := *s
+
 		if _, err := o.w.Run(func() {
-			if c := o.checkForAccountMovements(s); c != nil {
-				o.notify(s.UserID(), c)
+			if c := o.checkForAccountMovements(&ss); c != nil {
+				o.notify(ss.UserID(), c)
 			}
 		}); err != nil {
 			return err
@@ -73,28 +76,21 @@ func (o *Observer) observe() error {
 	return nil
 }
 
-func (o *Observer) checkForAccountMovements(s *domain.Subscription) interface{} {
-	// FIXME: subscriptions fecthed from repo should be movement subscriptions, and shoudn't need to check the type here
-	if s.Type() != domain.MovementSubscription {
-		return nil
-	}
-
+func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) interface{} {
 	changes := make(map[*domain.Account][]*domain.AccountMovement)
 	for _, a := range s.Accounts() {
 		movements, err := services.
 			CurrencyServiceFactory[a.Currency().Symbol].
-			GetTxsOfAddress(a.Address(), a.BlockHeight())
+			GetTxsOfAddress(a.Address(), a.BlockHeight()+1)
 		if err != nil {
 			log.Printf("failed to fetch movements for address(%s), %s", a.Address(), err)
 			continue
 		}
 
-		if movements == nil || len(movements) == 0 {
-			continue
+		for _, mv := range movements {
+			// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
+			a.Apply(mv)
 		}
-
-		// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
-		a.Apply(movements)
 
 		changes[a] = movements
 	}
@@ -102,7 +98,7 @@ func (o *Observer) checkForAccountMovements(s *domain.Subscription) interface{} 
 	return changes
 }
 
-func (o *Observer) notify(userID string, i interface{}) {
+func (o *MovementObserver) notify(userID string, i interface{}) {
 	for _, p := range o.ps {
 		if p == nil {
 			continue
@@ -111,6 +107,6 @@ func (o *Observer) notify(userID string, i interface{}) {
 	}
 }
 
-func (o *Observer) clear() {
+func (o *MovementObserver) clear() {
 	o.ps = []Publisher{}
 }
