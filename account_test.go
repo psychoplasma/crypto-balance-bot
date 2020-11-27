@@ -8,21 +8,20 @@ import (
 )
 
 func TestApply(t *testing.T) {
+	addr := "test-addr-1"
 	mv1 := &domain.AccountMovement{
-		BlockHeight: 10,
-		Changes: []*domain.BalanceChange{
-			{
-				Amount: big.NewInt(5),
+		Address: addr,
+		Changes: map[int][]*domain.BalanceChange{
+			10: {
+				{
+					Amount: big.NewInt(5),
+				},
 			},
 		},
 	}
-	addr := "test-addr-1"
-	c := domain.Currency{
-		Symbol:  "btc",
-		Decimal: big.NewInt(8),
-	}
-	a := domain.NewAccount(c, addr)
-	initBalance := big.NewInt(a.Balance().Int64())
+
+	a := domain.NewAccount(addr)
+	initBalance := new(big.Int).Set(a.Balance())
 
 	a.Apply(mv1)
 
@@ -32,30 +31,32 @@ func TestApply(t *testing.T) {
 	}
 }
 
-func TestApply_WithAlreadyAppliedMovement(t *testing.T) {
-	mv1 := &domain.AccountMovement{
-		BlockHeight: 10,
-		Changes: []*domain.BalanceChange{
-			{
-				Amount: big.NewInt(5),
-			},
-		},
-	}
-	mv2 := &domain.AccountMovement{
-		BlockHeight: 10,
-		Changes: []*domain.BalanceChange{
-			{
-				Amount: big.NewInt(5),
-			},
-		},
-	}
+func TestApply_WithAlreadyAppliedMovements(t *testing.T) {
 	addr := "test-addr-1"
-	c := domain.Currency{
-		Symbol:  "btc",
-		Decimal: big.NewInt(8),
+	mv1 := &domain.AccountMovement{
+		Address: addr,
+		Changes: map[int][]*domain.BalanceChange{
+			10: {
+				{
+					Amount: big.NewInt(5),
+				},
+			},
+		},
 	}
-	a := domain.NewAccount(c, addr)
-	initBalance := big.NewInt(a.Balance().Int64())
+
+	mv2 := &domain.AccountMovement{
+		Address: addr,
+		Changes: map[int][]*domain.BalanceChange{
+			10: {
+				{
+					Amount: big.NewInt(9),
+				},
+			},
+		},
+	}
+
+	a := domain.NewAccount(addr)
+	initBalance := new(big.Int).Set(a.Balance())
 
 	a.Apply(mv1)
 	a.Apply(mv2)

@@ -1,21 +1,49 @@
 package cryptobot
 
 import (
-	"fmt"
 	"math/big"
 )
-
-// AccountMovement represents the total change
-// made to Account in a certain block height
-type AccountMovement struct {
-	BlockHeight int
-	Changes     []*BalanceChange
-}
 
 // BalanceChange represents a change in balance
 type BalanceChange struct {
 	Amount *big.Int
 	TxHash string
+}
+
+// AccountMovement represents the total change
+// made to Account in a certain time range
+type AccountMovement struct {
+	Address  string
+	Currency Currency
+	Changes  map[int][]*BalanceChange // All the balance changes made to Account at a certain block height, map[blockheight]balanceChanges
+}
+
+// FromAccountMovement set the given AccountMovement's currency and return it
+func FromAccountMovement(c Currency, am *AccountMovement) *AccountMovement {
+	am.Currency = c
+	return am
+}
+
+// NewAccountMovement creates a new instance of AccountMovement
+func NewAccountMovement(address string) *AccountMovement {
+	return &AccountMovement{
+		Address: address,
+		Changes: make(map[int][]*BalanceChange),
+	}
+}
+
+// AddBalanceChange adds a balance change to the list of changes at the given block height
+func (am *AccountMovement) AddBalanceChange(blockHeight int, txHash string, amount *big.Int) {
+	if am.Changes[blockHeight] == nil {
+		am.Changes[blockHeight] = make([]*BalanceChange, 0)
+	}
+
+	am.Changes[blockHeight] = append(
+		am.Changes[blockHeight],
+		&BalanceChange{
+			Amount: amount,
+			TxHash: txHash,
+		})
 }
 
 // Account in a value object (even it seems like an entity).
@@ -26,16 +54,14 @@ type Account struct {
 	address     string
 	balance     *big.Int
 	blockHeight int
-	c           Currency
 }
 
 // NewAccount creates a new instance of Account with the given address
-func NewAccount(c Currency, address string) *Account {
+func NewAccount(address string) *Account {
 	return &Account{
 		address:     address,
 		balance:     big.NewInt(0),
 		blockHeight: -1,
-		c:           c,
 	}
 }
 
@@ -49,30 +75,29 @@ func (a *Account) Balance() *big.Int {
 	return a.balance
 }
 
-// BalanceToString returns the string representation of balance
-func (a *Account) BalanceToString() string {
-	return fmt.Sprintf("%s %s", a.balance.Text(10), a.c.Symbol)
-}
-
 // BlockHeight returns the last block height balance is updated
 func (a *Account) BlockHeight() int {
 	return a.blockHeight
 }
 
-// Currency returns the currency type of this account
-func (a *Account) Currency() Currency {
-	return a.c
-}
-
 // Apply applies a movement to the current state of this account
+// Movements in a AccountMovements object should be descending-ordered
+// by block height. Otherwise after the first Movement applied, the
+// remaining will be ignored.
 func (a *Account) Apply(am *AccountMovement) {
-	if am == nil || am.BlockHeight <= a.blockHeight {
+	if am == nil || am.Address != a.address {
 		return
 	}
 
-	for _, c := range am.Changes {
-		a.balance = a.balance.Add(a.balance, c.Amount)
-	}
+	for blockHeight, cs := range am.Changes {
+		if am == nil || blockHeight <= a.blockHeight {
+			return
+		}
 
-	a.blockHeight = am.BlockHeight
+		for _, c := range cs {
+			a.balance = a.balance.Add(a.balance, c.Amount)
+		}
+
+		a.blockHeight = blockHeight
+	}
 }

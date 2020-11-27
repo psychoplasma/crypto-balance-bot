@@ -9,7 +9,7 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
-// Publisher is
+// Publisher defines the functionalities for publishing services
 type Publisher interface {
 	PublishMessage(userID string, msg interface{})
 }
@@ -40,7 +40,7 @@ func (o *MovementObserver) Observe() {
 			break
 		}
 
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * 10)
 	}
 }
 
@@ -63,12 +63,14 @@ func (o *MovementObserver) observe() error {
 		ss := *s
 
 		if _, err := o.w.Run(func() {
-			if c := o.checkForAccountMovements(&ss); c != nil {
-				o.notify(ss.UserID(), c)
-			}
+			o.notify(
+				ss.UserID(),
+				o.checkForAccountMovements(&ss))
 		}); err != nil {
 			return err
 		}
+
+		time.Sleep(time.Millisecond * 1000)
 	}
 
 	o.w.WaitAll()
@@ -77,25 +79,26 @@ func (o *MovementObserver) observe() error {
 }
 
 func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) interface{} {
-	changes := make(map[*domain.Account][]*domain.AccountMovement)
+	acmList := make([]*domain.AccountMovement, 0)
 	for _, a := range s.Accounts() {
-		movements, err := services.
-			CurrencyServiceFactory[a.Currency().Symbol].
+		acm, err := services.
+			CurrencyServiceFactory[s.Currency().Symbol].
 			GetTxsOfAddress(a.Address(), a.BlockHeight()+1)
 		if err != nil {
+			// FIXME: do not expose any details of the subscription
 			log.Printf("failed to fetch movements for address(%s), %s", a.Address(), err)
 			continue
 		}
 
-		for _, mv := range movements {
-			// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
-			a.Apply(mv)
-		}
+		// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
+		a.Apply(acm)
 
-		changes[a] = movements
+		// TODO: this doesn't look right here
+		acm = domain.FromAccountMovement(s.Currency(), acm)
+		acmList = append(acmList, acm)
 	}
 
-	return changes
+	return acmList
 }
 
 func (o *MovementObserver) notify(userID string, i interface{}) {

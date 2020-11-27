@@ -38,12 +38,13 @@ type Subscription struct {
 	name      string
 	stype     SubscriptionType
 	activated bool
+	c         Currency
 	ac        Currency
 	accs      []*Account
 }
 
 // NewSubscription creates a new subscription
-func NewSubscription(id string, userID string, name string, stype SubscriptionType, against Currency) (*Subscription, error) {
+func NewSubscription(id string, userID string, name string, stype SubscriptionType, c Currency, against Currency) (*Subscription, error) {
 	if id == "" {
 		return nil, ErrInvalidID
 	}
@@ -57,6 +58,7 @@ func NewSubscription(id string, userID string, name string, stype SubscriptionTy
 		userID: userID,
 		name:   name,
 		stype:  stype,
+		c:      c,
 		ac:     against,
 		accs:   make([]*Account, 0),
 	}
@@ -94,15 +96,20 @@ func (s *Subscription) Accounts() []*Account {
 	return s.accs
 }
 
+// Currency returns currency property
+func (s *Subscription) Currency() Currency {
+	return s.c
+}
+
 // AddAccount adds a new account to this subscriptions. Duplicates will be overwritten
-func (s *Subscription) AddAccount(c Currency, address string) {
+func (s *Subscription) AddAccount(address string) {
 	for _, a := range s.Accounts() {
 		if a.Address() == address {
 			return
 		}
 	}
 
-	s.accs = append(s.accs, NewAccount(c, address))
+	s.accs = append(s.accs, NewAccount(address))
 }
 
 // Activate activates the subscription. User will start getting notifications about this subscription

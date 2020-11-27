@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/notification"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/inmemory"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
 	"gopkg.in/yaml.v2"
@@ -25,7 +24,7 @@ func main() {
 	}
 
 	o := application.NewMovementObserver(inmemory.NewSubscriptionReposititory())
-	o.RegisterPublisher(telegram.NewPublisher(c.Token, notification.MovementFormatter))
+	o.RegisterPublisher(telegram.NewPublisher(c.Token, telegram.MovementFormatter))
 	o.Observe()
 }
 

@@ -6,24 +6,33 @@ import (
 	"testing"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/notification"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/etherscanio"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
 func TestGetTxsOfAddress(t *testing.T) {
-	blockNum := 7000000
+	blockNum := 11000000
 	api := etherscanio.NewEthereumAPI(etherscanio.EthereumTranslator{})
 
 	mv, err := api.GetTxsOfAddress("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}
+	mv.Currency = services.ETH
 
-	t.Log(notification.MovementFormatter(map[*domain.Account][]*domain.AccountMovement{
-		domain.NewAccount(domain.Currency{}, "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"): mv,
-	}))
+	t.Log(telegram.MovementFormatter([]*domain.AccountMovement{mv}))
 
-	if mv[0] == nil || mv[len(mv)-1].BlockHeight < blockNum {
-		t.Fatalf("expected to have changes in block#%d but got nothing", blockNum)
+	numOfChanges := 0
+	for blockHeight, chs := range mv.Changes {
+		numOfChanges += len(chs)
+
+		if blockHeight < blockNum {
+			t.Fatalf("expected to have blocks higher than %d but got a block#%d", blockNum, blockHeight)
+		}
+	}
+
+	if numOfChanges == 0 {
+		t.Fatalf("expected to have changes since block#%d but got nothing", blockNum)
 	}
 }

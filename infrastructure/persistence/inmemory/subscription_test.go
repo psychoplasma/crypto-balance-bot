@@ -12,18 +12,14 @@ var subsRepo = inmemory.NewSubscriptionReposititory()
 var testSubs = []*domain.Subscription{}
 
 func populateTestData() {
-	s1, _ := domain.NewSubscription("1", "user1", "", domain.MovementSubscription, domain.Currency{})
+	s1, _ := domain.NewSubscription("1", "user1", "", domain.MovementSubscription, domain.Currency{}, domain.Currency{})
 	s1.Activate()
-
-	s2, _ := domain.NewSubscription("2", "user1", "", domain.MovementSubscription, domain.Currency{})
-
-	s3, _ := domain.NewSubscription("3", "user2", "", domain.MovementSubscription, domain.Currency{})
+	s2, _ := domain.NewSubscription("2", "user1", "", domain.MovementSubscription, domain.Currency{}, domain.Currency{})
+	s3, _ := domain.NewSubscription("3", "user2", "", domain.MovementSubscription, domain.Currency{}, domain.Currency{})
 	s3.Activate()
-
-	s4, _ := domain.NewSubscription("4", "user2", "", domain.ValueSubscription, domain.Currency{})
+	s4, _ := domain.NewSubscription("4", "user2", "", domain.ValueSubscription, domain.Currency{}, domain.Currency{})
 	s4.Activate()
-
-	s5, _ := domain.NewSubscription("5", "user3", "", domain.ValueSubscription, domain.Currency{})
+	s5, _ := domain.NewSubscription("5", "user3", "", domain.ValueSubscription, domain.Currency{}, domain.Currency{})
 
 	testSubs = append(testSubs, s1, s2, s3, s4, s5)
 	subsRepo.Save(s1)
@@ -86,7 +82,7 @@ func TestGetAllAcivatedValues(t *testing.T) {
 
 func TestSave(t *testing.T) {
 	expectedSize := len(testSubs) + 1
-	testItem, _ := domain.NewSubscription("6", "user3", "", domain.MovementSubscription, domain.Currency{})
+	testItem, _ := domain.NewSubscription("6", "user3", "", domain.MovementSubscription, domain.Currency{}, domain.Currency{})
 
 	subsRepo.Save(testItem)
 
@@ -105,7 +101,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestAdd_ExistingSubscription_WithDifferentUserID(t *testing.T) {
-	testItem, _ := domain.NewSubscription("1", "user3", "", domain.MovementSubscription, domain.Currency{})
+	testItem, _ := domain.NewSubscription("1", "user3", "", domain.MovementSubscription, domain.Currency{}, domain.Currency{})
 
 	if err := subsRepo.Save(testItem); err == nil {
 		t.Fatalf("expecting an error, but got nothing")

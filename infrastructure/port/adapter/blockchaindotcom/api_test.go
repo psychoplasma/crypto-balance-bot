@@ -5,29 +5,33 @@ package blockchaindotcom_test
 import (
 	"testing"
 
-	cryptobot "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/notification"
+	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchaindotcom"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
 func TestGetTxsOfAddress(t *testing.T) {
+	blockNum := 183579
 	api := blockchaindotcom.NewBitcoinAPI(blockchaindotcom.BitcoinTranslator{})
 
-	mv, err := api.GetTxsOfAddress("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", 157240)
+	mv, err := api.GetTxsOfAddress("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}
+	mv.Currency = services.BTC
 
-	t.Log(notification.MovementFormatter(map[*cryptobot.Account][]*cryptobot.AccountMovement{
-		cryptobot.NewAccount(cryptobot.Currency{}, "1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F"): mv,
-	}))
+	t.Log(telegram.MovementFormatter([]*domain.AccountMovement{mv}))
 
-	chagesExistForBlock := false
-	for _, m := range mv {
-		chagesExistForBlock = m.BlockHeight == 157240
+	changesExistForBlock := false
+	for blockHeight := range mv.Changes {
+		if blockHeight >= blockNum {
+			changesExistForBlock = true
+			break
+		}
 	}
 
-	if !chagesExistForBlock {
-		t.Fatalf("expected to have changes in block#%d but got nothing", 157240)
+	if !changesExistForBlock {
+		t.Fatalf("expected to have changes in block#%d but got nothing", blockNum)
 	}
 }

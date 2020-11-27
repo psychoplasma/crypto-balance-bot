@@ -10,9 +10,10 @@ import (
 func TestToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr2 := "test-addr-2"
+	blockHeight := 10
 	txs := []blockchaindotcom.Transaction{
 		{
-			BlockHeight: 10,
+			BlockHeight: blockHeight,
 			Hash:        "hash1",
 			Inputs: []blockchaindotcom.Input{
 				{
@@ -45,20 +46,20 @@ func TestToAccountMovements(t *testing.T) {
 
 	mvs := tr.ToAccountMovements(addr1, txs)
 
-	if len(mvs) != 1 {
-		t.Fatalf("expected movements count is %d but got %d", 1, len(mvs))
+	if len(mvs.Changes) != 1 {
+		t.Fatalf("expected movements count is %d but got %d", 1, len(mvs.Changes))
 	}
 
-	if mvs[0].BlockHeight != 10 {
-		t.Fatalf("expected movement's block height is %d but got %d", 10, mvs[0].BlockHeight)
+	if mvs.Changes[blockHeight] == nil {
+		t.Fatalf("expected to have changes at block#%d but got nothing", blockHeight)
 	}
 
-	if len(mvs[0].Changes) != 2 {
-		t.Fatalf("expected movement's balance change count is %d but got %d", 2, len(mvs[0].Changes))
+	if len(mvs.Changes[blockHeight]) != 2 {
+		t.Fatalf("expected movement's balance change count is %d but got %d", 2, len(mvs.Changes[blockHeight]))
 	}
 
 	balanceDiff := big.NewInt(0)
-	for _, ch := range mvs[0].Changes {
+	for _, ch := range mvs.Changes[blockHeight] {
 		balanceDiff = balanceDiff.Add(balanceDiff, ch.Amount)
 	}
 
