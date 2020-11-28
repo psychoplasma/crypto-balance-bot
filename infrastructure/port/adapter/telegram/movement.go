@@ -11,21 +11,24 @@ import (
 func MovementFormatter(v interface{}) string {
 	acms, _ := v.([]*domain.AccountMovement)
 
-	if len(acms) == 0 {
+	// We don't want to create empty movement message
+	// Instead setting the telegram message to empty string
+	// will make telegram bot not to the send any message at all
+	if !doesMovementExist(acms) {
 		return ""
 	}
 
-	movementExist := false
-	for _, am := range acms {
-		if len(am.Changes) > 0 {
-			movementExist = true
-		}
-	}
-
-	if !movementExist {
-		return ""
-	}
-
+	// Format the message as follows:
+	// ```
+	// symbol[address]
+	// {
+	//   block#n{ => amount symbol => ... }
+	//   block#n+1{ => amount symbol => ... }
+	//   .
+	//   .
+	//   block#m{ => amount symbol => ... }
+	// }
+	// ```
 	msg := "```\n"
 	for _, am := range acms {
 		mvmsg := ""
@@ -47,4 +50,16 @@ func MovementFormatter(v interface{}) string {
 	msg += "```"
 
 	return msg
+}
+
+func doesMovementExist(acm []*domain.AccountMovement) bool {
+	movementExist := false
+	for _, am := range acm {
+		if len(am.Changes) > 0 {
+			movementExist = true
+			break
+		}
+	}
+
+	return movementExist
 }

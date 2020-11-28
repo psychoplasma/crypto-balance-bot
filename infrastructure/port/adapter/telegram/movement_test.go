@@ -9,7 +9,7 @@ import (
 )
 
 func TestMovementFormatter(t *testing.T) {
-	expectedString := "```\nbtc[test1]\n{\n\tblock#2{ => -0.001000 btc => 0.009000 btc}\n\tblock#1{ => 0.005000 btc => -0.002000 btc}\n}\n```"
+	expectedString := "```\nbtc[test1]\n{\n\tblock#2{ => -0.001000 btc => 0.009000 btc }\n\tblock#1{ => 0.005000 btc => -0.002000 btc }\n}\n```"
 	mvs := []*domain.AccountMovement{
 		{
 			Address: "test1",
