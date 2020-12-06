@@ -41,7 +41,7 @@ func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string,
 	}
 
 	for _, addr := range addrDescs {
-		s.AddAccount(addr)
+		s.AddAccount(addr, *c)
 	}
 	s.Activate()
 
@@ -61,7 +61,7 @@ func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name stri
 	}
 
 	for _, addr := range addrDescs {
-		s.AddAccount(addr)
+		s.AddAccount(addr, *c)
 	}
 	s.Activate()
 
@@ -94,15 +94,13 @@ func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
 }
 
 // AddAccountToSubscription adds a new account to the given subscription
-func (sa *SubscriptionApplication) AddAccountToSubscription(subscriptionID string, addrDescs []string) error {
+func (sa *SubscriptionApplication) AddAccountToSubscription(subscriptionID string, addrDesc string, c domain.Currency) error {
 	s, err := sa.r.Get(subscriptionID)
 	if err != nil {
 		return err
 	}
 
-	for _, addr := range addrDescs {
-		s.AddAccount(addr)
-	}
+	s.AddAccount(addrDesc, c)
 	sa.r.Save(s)
 
 	return nil

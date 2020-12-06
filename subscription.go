@@ -102,14 +102,14 @@ func (s *Subscription) Currency() Currency {
 }
 
 // AddAccount adds a new account to this subscriptions. Duplicates will be overwritten
-func (s *Subscription) AddAccount(address string) {
+func (s *Subscription) AddAccount(address string, c Currency) {
 	for _, a := range s.Accounts() {
 		if a.Address() == address {
 			return
 		}
 	}
 
-	s.accs = append(s.accs, NewAccount(address))
+	s.accs = append(s.accs, NewAccount(address, c))
 }
 
 // Activate activates the subscription. User will start getting notifications about this subscription

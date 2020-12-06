@@ -14,9 +14,9 @@ const addressPrefix = "0x"
 type EthereumTranslator struct{}
 
 // ToAccountMovements converts data returning from third-party service to AccountMovement domain object
-func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) *domain.AccountMovement {
+func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) *domain.AccountMovements {
 	txs, _ := v.([]Transaction)
-	am := domain.NewAccountMovement(address)
+	am := domain.NewAccountMovements(address)
 
 	for _, tx := range txs {
 		// Do not include reverted/failed transactions

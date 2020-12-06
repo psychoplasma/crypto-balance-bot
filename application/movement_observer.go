@@ -79,10 +79,10 @@ func (o *MovementObserver) observe() error {
 }
 
 func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) interface{} {
-	acmList := make([]*domain.AccountMovement, 0)
+	sm := domain.NewSubscriptionMovements(s.ID(), s.Currency())
 	for _, a := range s.Accounts() {
 		acm, err := services.
-			CurrencyServiceFactory[s.Currency().Symbol].
+			CurrencyServiceFactory[a.Currency().Symbol].
 			GetTxsOfAddress(a.Address(), a.BlockHeight()+1)
 		if err != nil {
 			// FIXME: do not expose any details of the subscription
@@ -91,14 +91,12 @@ func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) inte
 		}
 
 		// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
-		a.Apply(acm)
+		a.Apply(acm.Sort())
 
-		// TODO: this doesn't look right here
-		acm = domain.FromAccountMovement(s.Currency(), acm)
-		acmList = append(acmList, acm)
+		sm.AddAccountMovements(acm)
 	}
 
-	return acmList
+	return sm
 }
 
 func (o *MovementObserver) notify(userID string, i interface{}) {

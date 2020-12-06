@@ -46,7 +46,7 @@ func NewEthereumAPI(t adapter.Translator) *EthereumAPI {
 }
 
 // GetTxsOfAddress fetches txs of the given address since the given block height
-func (a *EthereumAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovement, error) {
+func (a *EthereumAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
 	txs, err := a.fetchAddressTxs(address, sinceBlockHeight)
 	if err != nil {
 		return nil, err

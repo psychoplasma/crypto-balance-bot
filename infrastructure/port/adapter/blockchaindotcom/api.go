@@ -59,7 +59,7 @@ func NewBitcoinAPI(t adapter.Translator) *BitcoinAPI {
 // rather guarantees that txs at sinceBlockHeight will be included. There may be
 // past transactions as well. Therefore the changes should be applied in
 // an idempotent way in the domain.
-func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovement, error) {
+func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
 	txs := []Transaction{}
 	ai, err := a.fetchAddressInfo(address, pageLimit, 0)
 	if err != nil {
