@@ -109,7 +109,7 @@ func (s *Subscription) AddAccount(address string, c Currency) {
 		}
 	}
 
-	s.accs = append(s.accs, NewAccount(address, c))
+	s.accs = append(s.accs, NewAccount(s.UserID(), address, c))
 }
 
 // Activate activates the subscription. User will start getting notifications about this subscription

@@ -1,8 +1,10 @@
 package cryptobot
 
 import (
+	"log"
 	"math/big"
 	"sort"
+	"time"
 )
 
 // BalanceChange represents a change in balance
@@ -59,59 +61,44 @@ func (am *AccountMovements) AddBalanceChange(blockHeight int, txHash string, amo
 	)
 }
 
-// SubscriptionMovements keeps track of every asset movements under each account of the subscription
-// Blockheight ranges for movements for different accounts may differ
-type SubscriptionMovements struct {
-	subsID string
-	c      Currency
-	acms   map[string]*AccountMovements
+// AccountAssetsMovedEvent represents a domain event upon AccountMovements
+type AccountAssetsMovedEvent struct {
+	version    int
+	occurredOn time.Time
+	subsID     string
+	acms       *AccountMovements
+	c          Currency
 }
 
-// NewSubscriptionMovements creates a new instance from the given subscription ID and Currency
-func NewSubscriptionMovements(id string, c Currency) *SubscriptionMovements {
-	return &SubscriptionMovements{
-		subsID: id,
-		c:      c,
-		acms:   make(map[string]*AccountMovements),
+// NewAccountAssetsMovedEvent creates a new instance from AccountMovements
+func NewAccountAssetsMovedEvent(subsID string, c Currency, acms *AccountMovements) *AccountAssetsMovedEvent {
+	return &AccountAssetsMovedEvent{
+		version:    1,
+		occurredOn: time.Now(),
+		subsID:     subsID,
+		acms:       acms,
+		c:          c,
 	}
 }
 
-// Currency returns the Currency property
-func (sm *SubscriptionMovements) Currency() Currency {
-	return sm.c
+// AccountMovements returns AccountMovements
+func (evt *AccountAssetsMovedEvent) AccountMovements() *AccountMovements {
+	return evt.acms
 }
 
-// Subscription returns the Subscription ID property
-func (sm *SubscriptionMovements) Subscription() string {
-	return sm.subsID
+// Currency returns the currency property
+func (evt *AccountAssetsMovedEvent) Currency() Currency {
+	return evt.c
 }
 
-// AccountMovements retunrs all the movements of each account for this subscription
-func (sm *SubscriptionMovements) AccountMovements() map[string]*AccountMovements {
-	for _, acm := range sm.acms {
-		acm.Sort()
-	}
-	return sm.acms
+// OccurredOn returns event time
+func (evt *AccountAssetsMovedEvent) OccurredOn() time.Time {
+	return evt.occurredOn
 }
 
-// AccountMovementsForAccount retunrs the movement for the given address of an account
-func (sm *SubscriptionMovements) AccountMovementsForAccount(address string) *AccountMovements {
-	return sm.acms[address].Sort()
-}
-
-// AddAccountMovements adds a set of account movements
-// If the given account movements alread exist for
-// the given account ignores the movements
-func (sm *SubscriptionMovements) AddAccountMovements(acm *AccountMovements) {
-	if len(acm.Changes) == 0 {
-		return
-	}
-
-	if _, exist := sm.acms[acm.Address]; exist {
-		return
-	}
-
-	sm.acms[acm.Address] = AccountMovementsFrom(acm)
+// EventVersion returns event version
+func (evt *AccountAssetsMovedEvent) EventVersion() int {
+	return evt.version
 }
 
 // Account in a value object (even it seems like an entity).
@@ -119,6 +106,7 @@ func (sm *SubscriptionMovements) AddAccountMovements(acm *AccountMovements) {
 // but they are actually for tracking purposes which is not
 // really Address's property.
 type Account struct {
+	subsID      string
 	address     string
 	balance     *big.Int
 	currency    Currency
@@ -126,12 +114,13 @@ type Account struct {
 }
 
 // NewAccount creates a new instance of Account with the given address
-func NewAccount(address string, c Currency) *Account {
+func NewAccount(subsID string, address string, c Currency) *Account {
 	return &Account{
 		address:     address,
 		balance:     big.NewInt(0),
 		currency:    c,
 		blockHeight: -1,
+		subsID:      subsID,
 	}
 }
 
@@ -155,24 +144,34 @@ func (a *Account) Currency() Currency {
 	return a.currency
 }
 
+// SubscriptionID returns the subscription ID of which this account subscribed
+func (a *Account) SubscriptionID() string {
+	return a.subsID
+}
+
 // Apply applies a movement to the current state of this account
 // Movements in a AccountMovements object should be descending-ordered
 // by block height. Otherwise after the first Movement applied, the
 // remaining will be ignored.
-func (a *Account) Apply(am *AccountMovements) {
-	if am == nil || am.Address != a.address {
+func (a *Account) Apply(acms *AccountMovements) {
+	if acms == nil || acms.Address != a.address {
+		log.Printf("account's address(%s) doesn't match with the movement's address(%s), not applying", a.address, acms.Address)
 		return
 	}
 
-	for blockHeight, cs := range am.Changes {
-		if am == nil || blockHeight <= a.blockHeight {
+	for _, blockHeight := range acms.Blocks {
+		if blockHeight <= a.blockHeight {
+			log.Printf("movement's blockheight(%d) is less than the last updated blockheight(%d), not applying", blockHeight, a.blockHeight)
 			return
 		}
 
-		for _, c := range cs {
+		for _, c := range acms.Changes[blockHeight] {
 			a.balance = a.balance.Add(a.balance, c.Amount)
 		}
 
 		a.blockHeight = blockHeight
 	}
+
+	DomainEventPublisherInstance().
+		Publish(NewAccountAssetsMovedEvent(a.SubscriptionID(), a.Currency(), acms))
 }

@@ -27,8 +27,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	o := application.NewMovementObserver(subsRepo)
-	o.RegisterPublisher(telegram.NewPublisher(c.Token, telegram.MovementFormatter))
+	o := application.NewMovementObserver(
+		subsRepo,
+		telegram.NewPublisher(c.Token, telegram.MovementFormatter),
+	)
 	go o.Observe()
 
 	b := NewBot(c, subsAppService)

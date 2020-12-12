@@ -2,6 +2,7 @@ package application
 
 import (
 	"log"
+	"reflect"
 	"time"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
@@ -14,18 +15,49 @@ type Publisher interface {
 	PublishMessage(userID string, msg interface{})
 }
 
+// AccountAssetMovedEventSubscriber implements domain.DomainEventSubscriber interface
+type AccountAssetMovedEventSubscriber struct {
+	p      Publisher
+	userID string
+}
+
+// NewAccountAssetMovedEventSubscriber creates a new instance of subscriber for AccountAssetMoved event
+func NewAccountAssetMovedEventSubscriber(p Publisher, userID string) *AccountAssetMovedEventSubscriber {
+	return &AccountAssetMovedEventSubscriber{
+		p:      p,
+		userID: userID,
+	}
+}
+
+// HandleEvent sends telegram message about account movement to this user
+func (s *AccountAssetMovedEventSubscriber) HandleEvent(event interface{}) {
+	acms, b := event.(*domain.AccountAssetsMovedEvent)
+	if !b {
+		log.Printf("unexpected event type, %+v\n", event)
+		return
+	}
+	s.p.PublishMessage(s.userID, acms)
+}
+
+// SubscribedToEventType returns type of AccountAssetsMovedEvent to subscribe for it
+func (s *AccountAssetMovedEventSubscriber) SubscribedToEventType() reflect.Type {
+	return reflect.TypeOf(new(domain.AccountAssetsMovedEvent))
+}
+
+const observeInterval = 10
+
 // MovementObserver observes for account movements
 type MovementObserver struct {
 	sr domain.SubscriptionRepository
 	w  *concurrency.Worker
-	ps []Publisher
+	p  Publisher
 }
 
 // NewMovementObserver creates a new instance of MovementObserver
-func NewMovementObserver(sr domain.SubscriptionRepository) *MovementObserver {
+func NewMovementObserver(sr domain.SubscriptionRepository, p Publisher) *MovementObserver {
 	return &MovementObserver{
 		sr: sr,
-		ps: []Publisher{},
+		p:  p,
 		w:  concurrency.NewWorker(100, time.Second*30),
 	}
 }
@@ -40,16 +72,13 @@ func (o *MovementObserver) Observe() {
 			break
 		}
 
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * observeInterval)
 	}
 }
 
-// RegisterPublisher registers a publisher
-func (o *MovementObserver) RegisterPublisher(p Publisher) {
-	o.ps = append(o.ps, p)
-}
-
 func (o *MovementObserver) observe() error {
+	defer domain.DomainEventPublisherInstance().Reset()
+
 	subs, err := o.sr.GetAllActivatedMovements()
 	if err != nil {
 		return err
@@ -59,13 +88,15 @@ func (o *MovementObserver) observe() error {
 	// a change in movement for each in parallel
 	for _, s := range subs {
 		log.Printf("subs: %+v\n", s)
+
+		domain.DomainEventPublisherInstance().
+			Subscribe(NewAccountAssetMovedEventSubscriber(o.p, s.UserID()))
+
 		// FIXME: shouldn't pass by reference, will cause data corruption in parallel processing
 		ss := *s
 
 		if _, err := o.w.Run(func() {
-			o.notify(
-				ss.UserID(),
-				o.checkForAccountMovements(&ss))
+			o.checkForAccountMovements(&ss)
 		}); err != nil {
 			return err
 		}
@@ -78,8 +109,7 @@ func (o *MovementObserver) observe() error {
 	return nil
 }
 
-func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) interface{} {
-	sm := domain.NewSubscriptionMovements(s.ID(), s.Currency())
+func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) {
 	for _, a := range s.Accounts() {
 		acm, err := services.
 			CurrencyServiceFactory[a.Currency().Symbol].
@@ -92,22 +122,5 @@ func (o *MovementObserver) checkForAccountMovements(s *domain.Subscription) inte
 
 		// TODO: Doesn't look right place to apply changes on the domain object. Maybe need a domain service???
 		a.Apply(acm.Sort())
-
-		sm.AddAccountMovements(acm)
 	}
-
-	return sm
-}
-
-func (o *MovementObserver) notify(userID string, i interface{}) {
-	for _, p := range o.ps {
-		if p == nil {
-			continue
-		}
-		p.PublishMessage(userID, i)
-	}
-}
-
-func (o *MovementObserver) clear() {
-	o.ps = []Publisher{}
 }

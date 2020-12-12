@@ -20,9 +20,8 @@ func TestGetTxsOfAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sm := domain.NewSubscriptionMovements("subs_id", services.BTC)
-	sm.AddAccountMovements(mv.Sort())
-	t.Log(telegram.MovementFormatter(sm))
+	event := domain.NewAccountAssetsMovedEvent("subs_id", services.BTC, mv.Sort())
+	t.Log(telegram.MovementFormatter(event))
 
 	changesExistForBlock := false
 	for blockHeight := range mv.Changes {

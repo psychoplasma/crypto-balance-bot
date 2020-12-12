@@ -9,8 +9,9 @@ import (
 
 // MovementFormatter formats the given account movements to a string representation for telegram publisher
 func MovementFormatter(v interface{}) string {
-	sm, _ := v.(*domain.SubscriptionMovements)
-	acms := sm.AccountMovements()
+	event, _ := v.(*domain.AccountAssetsMovedEvent)
+	acms := event.AccountMovements()
+	currency := event.Currency()
 
 	// We don't want to create empty movement message
 	// Instead setting the telegram message to empty string
@@ -30,43 +31,31 @@ func MovementFormatter(v interface{}) string {
 	//   block#m{ => amount symbol => ... }
 	// }
 	// ```
-	msg := "```\n"
-	for _, am := range acms {
-		mvmsg := ""
-		for _, blockHeight := range am.Blocks {
-			chmsg := ""
-			for _, c := range am.Changes[blockHeight] {
-				// c.Amount / am.Currency.Decimal with 6 floating precision.
-				// For example amount:5, symbol:eth, decimal: 1000
-				// then the resulting string would be " => 0.00500 eth"
-				chmsg += fmt.Sprintf(" => %s %s",
-					new(big.Float).Quo(new(big.Float).SetInt(c.Amount),
-						new(big.Float).SetInt(sm.Currency().Decimal)).Text('f', 6),
-					sm.Currency().Symbol)
-			}
-			mvmsg += fmt.Sprintf("\tblock#%d{%s }\n", blockHeight, chmsg)
+	msg := ""
+	for _, blockHeight := range acms.Blocks {
+		chmsg := ""
+		for _, c := range acms.Changes[blockHeight] {
+			// c.Amount / am.Currency.Decimal with 6 floating precision.
+			// For example amount:5, symbol:eth, decimal: 1000
+			// then the resulting string would be " => 0.00500 eth"
+			chmsg += fmt.Sprintf(" => %s %s",
+				new(big.Float).Quo(new(big.Float).SetInt(c.Amount),
+					new(big.Float).SetInt(currency.Decimal)).Text('f', 6),
+				currency.Symbol)
 		}
-		msg += fmt.Sprintf("%s[%s]\n{\n%s}\n", sm.Currency().Symbol, am.Address, mvmsg)
+		msg += fmt.Sprintf("\tblock#%d{%s }\n", blockHeight, chmsg)
 	}
-	msg += "```"
+	msg = fmt.Sprintf("```\n%s[%s]\n{\n%s}\n```", currency.Symbol, acms.Address, msg)
 
 	return msg
 }
 
-func doesMovementExist(acms map[string]*domain.AccountMovements) bool {
-	movementExist := false
-	for _, acm := range acms {
-		for _, ch := range acm.Changes {
-			if len(ch) > 0 {
-				movementExist = true
-				break
-			}
-		}
-
-		if movementExist {
-			break
+func doesMovementExist(acms *domain.AccountMovements) bool {
+	for _, ch := range acms.Changes {
+		if len(ch) > 0 {
+			return true
 		}
 	}
 
-	return movementExist
+	return false
 }
