@@ -1,4 +1,4 @@
-package inmemory_test
+package mongodb_test
 
 import (
 	"testing"

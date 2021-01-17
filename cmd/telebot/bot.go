@@ -13,37 +13,78 @@ import (
 const parameterSeparator = " "
 
 var commands = map[string]command{
-	"subscribe_for_movement": {
-		Usage:          "/subscribe_for_movement <name> <ticker> [<address descriptor> ...]",
-		Description:    "",
+	"subscription_details": {
+		Endpoint:       "/subscription_details",
+		Usage:          "/subscription_details <subscription ID>",
+		Description:    "Displays the details of the given subscription",
+		ParameterCount: 1,
+	},
+	"subscribe_movement": {
+		Endpoint:       "/subscribe_for_movement",
+		Usage:          "/subscribe_for_movement <asset symbol> [<account's address> ...]",
+		Description:    "Subscribes to asset movements for an account",
+		ParameterCount: 2,
+	},
+	"subscribe_value": {
+		Endpoint:       "/subscribe_for_value",
+		Usage:          "/subscribe_for_value <asset symbol> <ticker symbol> <account's address> ",
+		Description:    "Subscribes to value change of an account for the given ticker",
 		ParameterCount: 3,
 	},
-	"subscribe_for_value": {
-		Usage:          "/subscribe_for_value <name> <ticker> <against ticker> <address descriptor> ",
-		Description:    "",
-		ParameterCount: 4,
-	},
 	"unsubscribe": {
-		Usage:          "/unsubscribe <subscription id>",
-		Description:    "",
+		Endpoint:       "/unsubscribe",
+		Usage:          "/unsubscribe <subscription ID>",
+		Description:    "Deletes the given subscription of the sender",
 		ParameterCount: 1,
 	},
 	"unsubscribe_all": {
+		Endpoint:       "/unsubscribe_all",
 		Usage:          "/unsubscribe_all",
-		Description:    "",
+		Description:    "Deletes all subscriptions of the sender",
 		ParameterCount: 0,
 	},
 	"my_subscriptions": {
+		Endpoint:       "/my_subscriptions",
 		Usage:          "/my_subscriptions",
-		Description:    "",
+		Description:    "Shows all subscriptions of the sender",
+		ParameterCount: 0,
+	},
+	"available_assets": {
+		Endpoint:       "/available_assets",
+		Usage:          "/available_assets",
+		Description:    "Shows available asset for a subscription",
+		ParameterCount: 0,
+	},
+	"available_commands": {
+		Endpoint:       "/available_commands",
+		Usage:          "/available_commands",
+		Description:    "Shows available commands",
+		ParameterCount: 0,
+	},
+	"help": {
+		Endpoint:       "/help",
+		Usage:          "/help",
+		Description:    "Shows this message",
 		ParameterCount: 0,
 	},
 }
 
 type command struct {
+	Endpoint       string
 	Usage          string
 	Description    string
 	ParameterCount int
+}
+
+func (cmd command) ValidateParameters(payload string) ([]string, error) {
+	params := strings.Split(payload, parameterSeparator)
+	log.Printf("Command parameters: %#v\n", params)
+
+	if len(params) < cmd.ParameterCount {
+		return nil, fmt.Errorf("Wrong number of inputs, command usage:\n\n```\n\t%s```", cmd.Usage)
+	}
+
+	return params, nil
 }
 
 // Bot is TelegramBot receives subscription related commands from a user and returns the corresponding responses
@@ -70,6 +111,7 @@ func NewBot(c *Config, subsApp *application.SubscriptionApplication) Bot {
 
 // Start starts the bot
 func (b Bot) Start() {
+	log.Println("Starting Telegram Bot")
 	b.registerCommands()
 	b.tb.Start()
 }
@@ -80,87 +122,147 @@ func (b Bot) Stop() {
 }
 
 func (b Bot) registerCommands() {
-	b.tb.Handle("/subscribe_for_value", func(m *tb.Message) {
-		msg := strings.Split(m.Payload, parameterSeparator)
-		fmt.Printf("message payload: %#v\n", msg)
+	b.tb.Handle(commands["subscription_details"].Endpoint, b.subscriptionDetailsCMD)
+	b.tb.Handle(commands["subscribe_value"].Endpoint, b.subscribeForValueCMD)
+	b.tb.Handle(commands["subscribe_movement"].Endpoint, b.subscribeForMovementCMD)
+	b.tb.Handle(commands["unsubscribe"].Endpoint, b.unsubscribeCMD)
+	b.tb.Handle(commands["unsubscribe_all"].Endpoint, b.unsubscribeAllCMD)
+	b.tb.Handle(commands["my_subscriptions"].Endpoint, b.mySubscriptionsCMD)
+	b.tb.Handle(commands["available_assets"].Endpoint, b.availableAssetsCMD)
+	b.tb.Handle(commands["available_commands"].Endpoint, b.availableCommandsCMD)
+	b.tb.Handle(commands["help"].Endpoint, b.helpCMD)
 
-		if len(msg) < commands["subscribe_for_value"].ParameterCount {
-			b.tb.Send(m.Sender,
-				fmt.Sprintf("Invalid inputs, see command usage: \"%s\"",
-					commands["subscribe_for_value"].Usage))
-			return
-		}
+	// Default handler for unhandled commands
+	b.tb.Handle(tb.OnText, b.defaultHandler)
+}
 
+func (b Bot) subscriptionDetailsCMD(m *tb.Message) {
+	params, err := commands["subscription_details"].ValidateParameters(m.Payload)
+	if err != nil {
+		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
+		return
+	}
+
+	s, err := b.subsApp.GetSubscription(params[0])
+	if err != nil {
+		log.Printf("failed to fetch subscription details, %s", err.Error())
+		return
+	}
+
+	if s == nil {
+		b.tb.Send(m.Sender, fmt.Sprintf("Cannot find subscription %s", params[0]))
+		return
+	}
+
+	b.tb.Send(m.Sender, fmt.Sprintf("Subscription Details\n ```\n%s```", s.ToString()), tb.ModeMarkdown)
+}
+
+func (b Bot) subscribeForValueCMD(m *tb.Message) {
+	params, err := commands["subscribe_value"].ValidateParameters(m.Payload)
+	if err != nil {
+		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
+		return
+	}
+
+	for _, account := range params[2:] {
 		if err := b.subsApp.SubscribeForValue(
 			m.Sender.Recipient(),
-			msg[0],
-			msg[1],
-			msg[2],
-			msg[3:],
+			params[0],
+			params[1],
+			account,
 		); err != nil {
-			log.Printf("failed to subscribe for value, %s", err.Error())
-		}
-
-		b.tb.Send(m.Sender, fmt.Sprintf("subscribed %s:%s for", msg[0], msg[1]))
-	})
-
-	b.tb.Handle("/subscribe_for_movement", func(m *tb.Message) {
-		msg := strings.Split(m.Payload, parameterSeparator)
-		fmt.Printf("message payload: %#v\n", msg)
-
-		if len(msg) < commands["subscribe_for_movement"].ParameterCount {
-			b.tb.Send(m.Sender, fmt.Sprintf("Invalid inputs, see command usage: \"%s\"", commands["subscribe_for_movement"].Usage))
+			log.Printf("subscription failed, %s", err.Error())
 			return
 		}
+	}
 
+	b.tb.Send(m.Sender, fmt.Sprintf("subscribed %s:%s for", params[0], params[1]))
+}
+
+func (b Bot) subscribeForMovementCMD(m *tb.Message) {
+	params, err := commands["subscribe_movement"].ValidateParameters(m.Payload)
+	if err != nil {
+		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
+		return
+	}
+
+	for _, account := range params[1:] {
 		if err := b.subsApp.SubscribeForMovement(
 			m.Sender.Recipient(),
-			msg[0],
-			msg[1],
-			msg[2:],
+			params[0],
+			account,
 		); err != nil {
-			log.Printf("failed to subscribe for value, %s", err.Error())
-		}
-
-		b.tb.Send(m.Sender, fmt.Sprintf("subscribed %s:%s for", msg[0], msg[1]))
-	})
-
-	b.tb.Handle("/unsubscribe", func(m *tb.Message) {
-		if err := b.subsApp.Unsubscribe(m.Payload); err != nil {
-			b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe, %s", err.Error()))
-		}
-	})
-
-	b.tb.Handle("/unsubscribe_all", func(m *tb.Message) {
-		if err := b.subsApp.UnsubscribeAllForUser(m.Sender.Recipient()); err != nil {
-			b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe all, %s", err.Error()))
-		}
-	})
-
-	b.tb.Handle("/my_subscriptions", func(m *tb.Message) {
-		subs, err := b.subsApp.GetSubscriptionsForUser(m.Sender.Recipient())
-		if err != nil {
-			log.Printf("failed to subscribe for value, %s", err.Error())
+			log.Printf("failed to subscribe for movement, %s", err.Error())
 			return
 		}
+	}
 
-		subsMsg := ""
+	b.tb.Send(
+		m.Sender,
+		fmt.Sprintf("subscribed to: `%s` accounts ```\n%+v\n``` for movement changes", params[0], params[1:]),
+		tb.ModeMarkdown,
+	)
+}
 
+func (b Bot) unsubscribeCMD(m *tb.Message) {
+	params, err := commands["unsubscribe"].ValidateParameters(m.Payload)
+	if err != nil {
+		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
+		return
+	}
+
+	if err := b.subsApp.Unsubscribe(params[0]); err != nil {
+		b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe, %s", err.Error()))
+	}
+}
+
+func (b Bot) unsubscribeAllCMD(m *tb.Message) {
+	if err := b.subsApp.UnsubscribeAllForUser(m.Sender.Recipient()); err != nil {
+		b.tb.Send(m.Sender, fmt.Sprintf("failed to unsubscribe all, %s", err.Error()))
+	}
+}
+
+func (b Bot) mySubscriptionsCMD(m *tb.Message) {
+	subs, err := b.subsApp.GetSubscriptionsForUser(m.Sender.Recipient())
+	if err != nil {
+		log.Printf("failed to fetch subscriptions, %s", err.Error())
+		return
+	}
+
+	msg := ""
+	if len(subs) < 1 {
+		msg = "I don't have any subscriptions"
+	} else {
 		for _, s := range subs {
-			addrs := ""
-			log.Printf("Address count: %d\n", len(addrs))
-			for _, a := range s.Accounts() {
-				addrs += " : " + a.Address()
-			}
-			subsMsg += fmt.Sprintf("ID: %s, Addresses: %s \n", s.ID(), addrs)
+			msg += fmt.Sprintf("`%s` : `%s[%s]`\n\n", s.ID(), s.Currency().Symbol, s.Account())
 		}
+		msg = fmt.Sprintf("My Subscriptions: \n\n%s", msg)
+	}
 
-		log.Println(subsMsg)
+	b.tb.Send(m.Sender, msg, tb.ModeMarkdown)
+}
 
-		b.tb.Send(m.Sender, subsMsg)
-	})
+func (b Bot) availableAssetsCMD(m *tb.Message) {
+	s := "Avialable Assets\n\n\n```\n Bitcoin[btc], Ethereum[eth]```"
+	b.tb.Send(m.Sender, s, tb.ModeMarkdown)
+}
 
-	b.tb.Handle(tb.OnText, func(m *tb.Message) {
-		fmt.Printf("Unhandled message: %#v\n", m.Payload)
-	})
+func (b Bot) availableCommandsCMD(m *tb.Message) {
+	s := "Available Commands\n\n\n```\n"
+	for cmdName, cmd := range commands {
+		s += fmt.Sprintf("%s :\r\r %s\n\n", cmdName, cmd.Usage)
+	}
+	s += "```"
+	b.tb.Send(m.Sender, s, tb.ModeMarkdown)
+}
+
+func (b Bot) helpCMD(m *tb.Message) {
+	s := "Help\n\n\n```\n Shows this message```"
+	b.tb.Send(m.Sender, s, tb.ModeMarkdown)
+}
+
+func (b Bot) defaultHandler(m *tb.Message) {
+	s := fmt.Sprintf("Unknown command: ```\n %s```", m.Text)
+	log.Print(s)
+	b.tb.Send(m.Sender, s, tb.ModeMarkdown)
 }

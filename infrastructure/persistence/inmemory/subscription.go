@@ -9,8 +9,8 @@ import (
 
 var errIndifferentUserID = errors.New("updating UserID field of an existing subscription is not allowed")
 
-// SubscriptionReposititory is an in-memory implementation of SubscriptionReposititory
-type SubscriptionReposititory struct {
+// SubscriptionRepository is an in-memory implementation of SubscriptionRepository
+type SubscriptionRepository struct {
 	subsByUserID           map[string]map[string]*domain.Subscription
 	subsByID               map[string]*domain.Subscription
 	subsActivatedMovements map[string]*domain.Subscription
@@ -18,9 +18,9 @@ type SubscriptionReposititory struct {
 	size                   int
 }
 
-// NewSubscriptionReposititory creates a new instance of SubscriptionReposititory
-func NewSubscriptionReposititory() *SubscriptionReposititory {
-	return &SubscriptionReposititory{
+// NewSubscriptionRepository creates a new instance of SubscriptionRepository
+func NewSubscriptionRepository() *SubscriptionRepository {
+	return &SubscriptionRepository{
 		subsByUserID:           make(map[string]map[string]*domain.Subscription),
 		subsByID:               make(map[string]*domain.Subscription),
 		subsActivatedMovements: make(map[string]*domain.Subscription),
@@ -29,50 +29,61 @@ func NewSubscriptionReposititory() *SubscriptionReposititory {
 	}
 }
 
+// Begin starts a new unit for a work to be done on repository
+func (r *SubscriptionRepository) Begin() error {
+	return nil
+}
+
+// Fail rollbacks repository to the state before this work
+func (r *SubscriptionRepository) Fail() {}
+
+// Success finalizes the work done on repository
+func (r *SubscriptionRepository) Success() {}
+
 // NextIdentity returns the next available identity
-func (r *SubscriptionReposititory) NextIdentity() string {
-	return uuid.New().String()
+func (r *SubscriptionRepository) NextIdentity(userID string) string {
+	return userID + ":" + uuid.New().String()
 }
 
 // Size returns the total number of subscriptions persited in the repository
-func (r *SubscriptionReposititory) Size() int {
-	return r.size
+func (r *SubscriptionRepository) Size() int64 {
+	return int64(r.size)
 }
 
 // Get returns the subscription for the given subscription id
-func (r *SubscriptionReposititory) Get(id string) (*domain.Subscription, error) {
+func (r *SubscriptionRepository) Get(id string) (*domain.Subscription, error) {
 	return r.subsByID[id], nil
 }
 
 // GetAllForUser returns all subscriptions for the given user id
-func (r *SubscriptionReposititory) GetAllForUser(userID string) ([]*domain.Subscription, error) {
+func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for _, s := range r.subsByUserID[userID] {
-		subs = append(subs, s)
+	for k := range r.subsByUserID[userID] {
+		subs = append(subs, r.subsByUserID[userID][k])
 	}
 	return subs, nil
 }
 
 // GetAllActivatedMovements returns all activated movement subscriptions
-func (r *SubscriptionReposititory) GetAllActivatedMovements() ([]*domain.Subscription, error) {
+func (r *SubscriptionRepository) GetAllActivatedMovements() ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for _, s := range r.subsActivatedMovements {
-		subs = append(subs, s)
+	for k := range r.subsActivatedMovements {
+		subs = append(subs, r.subsActivatedMovements[k])
 	}
 	return subs, nil
 }
 
 // GetAllActivatedValues returns all activated value subscriptions
-func (r *SubscriptionReposititory) GetAllActivatedValues() ([]*domain.Subscription, error) {
+func (r *SubscriptionRepository) GetAllActivatedValues() ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for _, s := range r.subsActivatedValues {
-		subs = append(subs, s)
+	for k := range r.subsActivatedValues {
+		subs = append(subs, r.subsActivatedValues[k])
 	}
 	return subs, nil
 }
 
 // Save persists/updates the given subscription
-func (r *SubscriptionReposititory) Save(s *domain.Subscription) error {
+func (r *SubscriptionRepository) Save(s *domain.Subscription) error {
 	// Do not allow to update UserID of an existing subscription
 	if r.subsByID[s.ID()] != nil && r.subsByID[s.ID()].UserID() != s.UserID() {
 		return errIndifferentUserID
@@ -111,7 +122,7 @@ func (r *SubscriptionReposititory) Save(s *domain.Subscription) error {
 }
 
 // Remove removes the given subscription from the persistance
-func (r *SubscriptionReposititory) Remove(s *domain.Subscription) error {
+func (r *SubscriptionRepository) Remove(s *domain.Subscription) error {
 	// Decrement the size if the item exists upon removal
 	if r.subsByID[s.ID()] != nil {
 		r.size--

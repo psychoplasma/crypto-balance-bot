@@ -21,9 +21,9 @@ var (
 )
 
 // CurrencyFactory keeps implemented currencies
-var CurrencyFactory = map[string]*domain.Currency{
-	"btc": &BTC,
-	"eth": &ETH,
+var CurrencyFactory = map[string]domain.Currency{
+	"btc": BTC,
+	"eth": ETH,
 }
 
 // CurrencyServiceFactory keeps implemented currency services

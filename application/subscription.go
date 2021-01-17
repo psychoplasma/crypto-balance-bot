@@ -2,6 +2,8 @@ package application
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
@@ -16,126 +18,295 @@ type SubscriptionApplication struct {
 	r domain.SubscriptionRepository
 }
 
-// NewSubscriptionApplication fatory function
-func NewSubscriptionApplication(r domain.SubscriptionRepository) *SubscriptionApplication {
+// NewSubscriptionApplication factory function
+func NewSubscriptionApplication(repo domain.SubscriptionRepository) *SubscriptionApplication {
 	return &SubscriptionApplication{
-		r: r,
+		r: repo,
 	}
 }
 
 // SubscribeForValue creates a new value-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForValue(userID string, name string, currencySymbol string, againstCurrencySymbol string, addrDescs []string) error {
-	c, e := services.CurrencyFactory[currencySymbol]
-	if !e {
-		return errInexistentCurrency
-	}
-
-	ac, e := services.CurrencyFactory[currencySymbol]
-	if !e {
-		return errInexistentCurrency
-	}
-
-	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.ValueSubscription, *c, *ac)
-	if err != nil {
+func (sa *SubscriptionApplication) SubscribeForValue(userID string, currencySymbol string, againstCurrencySymbol string, account string) error {
+	if err := sa.r.Begin(); err != nil {
 		return err
 	}
 
-	for _, addr := range addrDescs {
-		s.AddAccount(addr, *c)
+	c, exist := services.CurrencyFactory[currencySymbol]
+	if !exist {
+		sa.r.Fail()
+		return errInexistentCurrency
 	}
+
+	ac, exist := services.CurrencyFactory[againstCurrencySymbol]
+	if !exist {
+		sa.r.Fail()
+		return errInexistentCurrency
+	}
+
+	s, err := domain.NewSubscription(
+		sa.r.NextIdentity(userID),
+		userID,
+		domain.ValueSubscription,
+		account,
+		c,
+		ac,
+	)
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
 	s.Activate()
 
-	return sa.r.Save(s)
+	if err := sa.r.Save(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
+
+	return nil
 }
 
 // SubscribeForMovement creates a new movement-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForMovement(userID string, name string, currencySymbol string, addrDescs []string) error {
-	c, e := services.CurrencyFactory[currencySymbol]
-	if !e {
-		return errInexistentCurrency
-	}
-
-	s, err := domain.NewSubscription(sa.r.NextIdentity(), userID, name, domain.MovementSubscription, *c, domain.Currency{})
-	if err != nil {
+func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencySymbol string, account string) error {
+	if err := sa.r.Begin(); err != nil {
 		return err
 	}
 
-	for _, addr := range addrDescs {
-		s.AddAccount(addr, *c)
+	c, exist := services.CurrencyFactory[currencySymbol]
+	if !exist {
+		sa.r.Fail()
+		return errInexistentCurrency
 	}
+
+	s, err := domain.NewSubscription(
+		sa.r.NextIdentity(userID),
+		userID,
+		domain.MovementSubscription,
+		account,
+		c,
+		domain.Currency{},
+	)
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
 	s.Activate()
 
-	return sa.r.Save(s)
+	if err := sa.r.Save(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
+
+	return nil
 }
 
 // Unsubscribe removes the given subscription
 func (sa *SubscriptionApplication) Unsubscribe(subscriptionID string) error {
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
+	if err := sa.r.Begin(); err != nil {
 		return err
 	}
-	return sa.r.Remove(s)
+
+	s, err := sa.r.Get(subscriptionID)
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	if err := sa.r.Remove(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
+
+	return nil
 }
 
 // UnsubscribeAllForUser removes all subscription belogs to the given user
 func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
 	subs, err := sa.r.GetAllForUser(userID)
 	if err != nil {
+		sa.r.Fail()
 		return err
 	}
 
 	for _, s := range subs {
 		if err := sa.r.Remove(s); err != nil {
+			sa.r.Fail()
 			return err
 		}
 	}
 
-	return nil
-}
-
-// AddAccountToSubscription adds a new account to the given subscription
-func (sa *SubscriptionApplication) AddAccountToSubscription(subscriptionID string, addrDesc string, c domain.Currency) error {
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
-		return err
-	}
-
-	s.AddAccount(addrDesc, c)
-	sa.r.Save(s)
+	sa.r.Success()
 
 	return nil
 }
 
 // ActivateSubscription activates the given subscription
 func (sa *SubscriptionApplication) ActivateSubscription(subscriptionID string) error {
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
+	if err := sa.r.Begin(); err != nil {
 		return err
 	}
+
+	s, err := sa.r.Get(subscriptionID)
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
 	s.Activate()
-	sa.r.Save(s)
+
+	if err := sa.r.Save(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
 
 	return nil
 }
 
 // DeactivateSubscription deactivates the given subscription
 func (sa *SubscriptionApplication) DeactivateSubscription(subscriptionID string) error {
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
+	if err := sa.r.Begin(); err != nil {
 		return err
 	}
+
+	s, err := sa.r.Get(subscriptionID)
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
 	s.Deactivate()
-	sa.r.Save(s)
+
+	if err := sa.r.Save(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
 
 	return nil
 }
 
 // GetSubscription returns the details of the given subscription
 func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscription, error) {
-	return sa.r.Get(id)
+	if err := sa.r.Begin(); err != nil {
+		return nil, err
+	}
+
+	s, err := sa.r.Get(id)
+	if err != nil {
+		sa.r.Fail()
+		return nil, err
+	}
+
+	sa.r.Success()
+
+	return s, nil
 }
 
 // GetSubscriptionsForUser returns the details of all subscriptions for the given user
 func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*domain.Subscription, error) {
-	return sa.r.GetAllForUser(userID)
+	if err := sa.r.Begin(); err != nil {
+		return nil, err
+	}
+
+	subs, err := sa.r.GetAllForUser(userID)
+	if err != nil {
+		sa.r.Fail()
+		return nil, err
+	}
+
+	sa.r.Success()
+
+	return subs, nil
+}
+
+// GetAllActivatedMovements returns all activated movement subscriptions
+func (sa *SubscriptionApplication) GetAllActivatedMovements() ([]*domain.Subscription, error) {
+	if err := sa.r.Begin(); err != nil {
+		return nil, err
+	}
+
+	subs, err := sa.r.GetAllActivatedMovements()
+	if err != nil {
+		sa.r.Fail()
+		return nil, err
+	}
+
+	sa.r.Success()
+
+	return subs, nil
+}
+
+// CheckAndApplyAccountMovements checks whether there is any movement
+// for the given account and if there is, applies them to the account.
+func (sa *SubscriptionApplication) CheckAndApplyAccountMovements(s *domain.Subscription) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	if err := sa.checkAndApplyAccountMovements(s); err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
+// CheckAndApplyAccountMovementsForAllActiveSubscriptions checks and applies
+// account movements for all active movement subscriptions
+func (sa *SubscriptionApplication) CheckAndApplyAccountMovementsForAllActiveSubscriptions() error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	subs, err := sa.r.GetAllActivatedMovements()
+	if err != nil {
+		sa.r.Fail()
+		return err
+	}
+
+	for _, s := range subs {
+		if err := sa.checkAndApplyAccountMovements(s); err != nil {
+			log.Printf("error while checking account movements for %s : %s", s.Account(), err.Error())
+		}
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
+func (sa *SubscriptionApplication) checkAndApplyAccountMovements(s *domain.Subscription) error {
+	if s == nil {
+		return fmt.Errorf("nil subscription")
+	}
+
+	cs, exist := services.CurrencyServiceFactory[s.Currency().Symbol]
+	if !exist {
+		return fmt.Errorf("no currency service found for %s", s.Currency().Symbol)
+	}
+
+	acm, err := cs.GetTxsOfAddress(s.Account(), s.BlockHeight()+1)
+	if err != nil {
+		return err
+	}
+
+	s.ApplyMovements(acm.Sort())
+
+	return sa.r.Save(s)
 }

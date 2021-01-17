@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/inmemory"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/mongodb"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,20 +17,18 @@ type Config struct {
 	PollingTime time.Duration `yaml:"polling-time"`
 }
 
-var subsRepo = inmemory.NewSubscriptionReposititory()
-var subsAppService = application.NewSubscriptionApplication(subsRepo)
-
 func main() {
 	c, err := readConfig("./config.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	o := application.NewMovementObserver(
-		subsRepo,
-		telegram.NewPublisher(c.Token, telegram.MovementFormatter),
-	)
-	go o.Observe()
+	// var subsRepo = inmemory.NewSubscriptionRepository()
+	subsRepo, err := mongodb.NewSubscriptionRepository("mongodb://127.0.0.1:27017", "CryptoBalanceBot")
+	if err != nil {
+		panic(err)
+	}
+	var subsAppService = application.NewSubscriptionApplication(subsRepo)
 
 	b := NewBot(c, subsAppService)
 	b.Start()
