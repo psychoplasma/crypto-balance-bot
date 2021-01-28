@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/etherscanio"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/ethereum/etherscanio"
 )
 
 func TestToAccountMovements(t *testing.T) {

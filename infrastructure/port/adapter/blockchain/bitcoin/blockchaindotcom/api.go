@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain"
 )
 
 var (
@@ -44,11 +44,11 @@ type AddressInfo struct {
 
 // BitcoinAPI implements CurrencyAPI for Bitcoin
 type BitcoinAPI struct {
-	t adapter.Translator
+	t blockchain.Translator
 }
 
 // NewBitcoinAPI creates a new instance of BitcoinAPI
-func NewBitcoinAPI(t adapter.Translator) *BitcoinAPI {
+func NewBitcoinAPI(t blockchain.Translator) *BitcoinAPI {
 	return &BitcoinAPI{
 		t: t,
 	}

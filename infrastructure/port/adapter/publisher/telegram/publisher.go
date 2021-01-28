@@ -3,7 +3,7 @@ package telegram
 import (
 	"log"
 
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher"
 	telegram "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -16,11 +16,11 @@ func (r recipient) Recipient() string {
 // Publisher is a message publisher using Telegram API
 type Publisher struct {
 	teleBot   *telegram.Bot
-	formatter adapter.Formatter
+	formatter publisher.Formatter
 }
 
 // NewPublisher creates a new instance of TelegramPublisher
-func NewPublisher(token string, fmt adapter.Formatter) *Publisher {
+func NewPublisher(token string, fmt publisher.Formatter) *Publisher {
 	bot, err := telegram.NewBot(telegram.Settings{
 		Token: token,
 	})

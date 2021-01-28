@@ -11,7 +11,7 @@ import (
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/mongodb"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
 	"gopkg.in/yaml.v2"
 )
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 

@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchaindotcom"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/etherscanio"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/bitcoin/blockchaindotcom"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/ethereum/etherscanio"
 )
 
 // Implemented currencies

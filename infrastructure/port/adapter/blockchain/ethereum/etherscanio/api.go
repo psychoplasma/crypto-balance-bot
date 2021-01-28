@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain"
 )
 
 var (
@@ -35,11 +35,11 @@ type Transaction struct {
 
 // EthereumAPI implements CurrencyAPI for Bitcoin
 type EthereumAPI struct {
-	t adapter.Translator
+	t blockchain.Translator
 }
 
 // NewEthereumAPI creates a new instance of EthereumAPI
-func NewEthereumAPI(t adapter.Translator) *EthereumAPI {
+func NewEthereumAPI(t blockchain.Translator) *EthereumAPI {
 	return &EthereumAPI{
 		t: t,
 	}
