@@ -44,7 +44,10 @@ func TestToAccountMovements(t *testing.T) {
 
 	tr := blockchaindotcom.BitcoinTranslator{}
 
-	mvs := tr.ToAccountMovements(addr1, txs)
+	mvs, err := tr.ToAccountMovements(addr1, txs)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(mvs.Changes) != 1 {
 		t.Fatalf("expected movements count is %d but got %d", 1, len(mvs.Changes))

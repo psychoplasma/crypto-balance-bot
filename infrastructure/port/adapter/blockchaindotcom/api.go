@@ -80,7 +80,7 @@ func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*dom
 		txCount += len(ai.Txs)
 	}
 
-	return a.t.ToAccountMovements(address, txs), nil
+	return a.t.ToAccountMovements(address, txs)
 }
 
 // API call to https://blockchain.info/rawaddr/$bitcoin_address.

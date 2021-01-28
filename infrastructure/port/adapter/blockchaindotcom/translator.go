@@ -10,7 +10,7 @@ import (
 type BitcoinTranslator struct{}
 
 // ToAccountMovements converts data returning from third-party service to .AccountMovement domain object
-func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) *domain.AccountMovements {
+func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*domain.AccountMovements, error) {
 	txs, _ := v.([]Transaction)
 	am := domain.NewAccountMovements(address)
 
@@ -34,5 +34,5 @@ func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) *d
 		}
 	}
 
-	return am
+	return am, nil
 }

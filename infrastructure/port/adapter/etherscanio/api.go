@@ -52,7 +52,7 @@ func (a *EthereumAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*do
 		return nil, err
 	}
 
-	return a.t.ToAccountMovements(address, txs), nil
+	return a.t.ToAccountMovements(address, txs)
 }
 
 // API call to https://api.etherscan.io/api?module=account&action=txlist&address=.

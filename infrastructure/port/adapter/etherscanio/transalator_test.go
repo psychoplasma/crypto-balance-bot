@@ -30,7 +30,10 @@ func TestToAccountMovements(t *testing.T) {
 		},
 	}
 
-	mv := etherscanio.EthereumTranslator{}.ToAccountMovements(addr1, txs)
+	mv, err := etherscanio.EthereumTranslator{}.ToAccountMovements(addr1, txs)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(mv.Changes) != 1 {
 		t.Fatalf("expected movements count is %d but got %d", 1, len(mv.Changes))
