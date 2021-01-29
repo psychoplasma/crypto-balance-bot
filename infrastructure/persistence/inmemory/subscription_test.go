@@ -1,6 +1,7 @@
 package inmemory_test
 
 import (
+	"os"
 	"testing"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
@@ -26,6 +27,11 @@ func populateSubsData() {
 	subsRepo.Save(s3)
 	subsRepo.Save(s4)
 	subsRepo.Save(s5)
+}
+
+func TestMain(m *testing.M) {
+	populateSubsData()
+	os.Exit(m.Run())
 }
 
 func TestSubscriptionRepository_NextIdentity(t *testing.T) {
