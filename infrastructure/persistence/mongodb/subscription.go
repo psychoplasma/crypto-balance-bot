@@ -19,7 +19,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-var collectionName = "Subscriptions"
+// CollectionName is the name of Subscription collection
+const CollectionName = "Subscriptions"
 
 // SubscriptionRepository is MongoDB implementation of SubscriptionRepository
 type SubscriptionRepository struct {
@@ -47,7 +48,7 @@ func NewSubscriptionRepository(uri string, databaseName string) (*SubscriptionRe
 
 	repo.subs = repo.client.
 		Database(databaseName).
-		Collection(collectionName)
+		Collection(CollectionName)
 
 	return repo, nil
 }
@@ -96,15 +97,12 @@ func (r *SubscriptionRepository) NextIdentity(userID string) string {
 
 // Size returns the total number of subscriptions persited in the repository
 func (r *SubscriptionRepository) Size() int64 {
-	c, err := r.applyOperation(func() (interface{}, error) {
-		return r.subs.EstimatedDocumentCount(context.Background(), nil)
-	})
-
+	c, err := r.subs.EstimatedDocumentCount(context.Background(), nil)
 	if err != nil {
 		return -1
 	}
 
-	return c.(int64)
+	return c
 }
 
 // Get returns the subscription for the given subscription id
@@ -116,7 +114,7 @@ func (r *SubscriptionRepository) Get(id string) (*domain.Subscription, error) {
 		return nil, err
 	}
 
-	return toDomain(s.(*Subscription)), err
+	return ToDomain(s.(*Subscription)), err
 }
 
 // GetAllForUser returns all subscriptions for the given user id
@@ -128,7 +126,7 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 		return nil, err
 	}
 
-	return toDomainSlice(subs.([]*Subscription)), nil
+	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
 // GetAllActivatedMovements returns all activated movement subscriptions
@@ -140,7 +138,7 @@ func (r *SubscriptionRepository) GetAllActivatedMovements() ([]*domain.Subscript
 		return nil, err
 	}
 
-	return toDomainSlice(subs.([]*Subscription)), nil
+	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
 // GetAllActivatedValues returns all activated value subscriptions
@@ -152,13 +150,13 @@ func (r *SubscriptionRepository) GetAllActivatedValues() ([]*domain.Subscription
 		return nil, err
 	}
 
-	return toDomainSlice(subs.([]*Subscription)), nil
+	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
 // Save persists/updates the given subscription
 func (r *SubscriptionRepository) Save(s *domain.Subscription) error {
 	_, err := r.applyOperation(func() (interface{}, error) {
-		return nil, r.replaceOrInsert(fromDomain(s))
+		return nil, r.replaceOrInsert(FromDomain(s))
 	})
 
 	return err
@@ -297,18 +295,19 @@ func (r *SubscriptionRepository) delete(id string) error {
 
 // Subscription represents a document in MongoDB corresponding to domain.Subscription
 type Subscription struct {
-	ID              string `bson:"_id"`
-	UserID          string `bson:"user_id"`
-	Type            string `bson:"type"`
-	Activated       bool   `bson:"activated"`
-	Currency        string `bson:"currency"`
-	AgainstCurrency string `bson:"against_currency"`
-	Account         string `bson:"account"`
-	Balance         string `bson:"balance"`
-	BlockHeight     int    `bson:"block_height"`
+	ID              string `bson:"_id" json:"_id"`
+	UserID          string `bson:"user_id" json:"user_id"`
+	Type            string `bson:"type" json:"type"`
+	Activated       bool   `bson:"activated" json:"activated"`
+	Currency        string `bson:"currency" json:"currency"`
+	AgainstCurrency string `bson:"against_currency" json:"against_currency"`
+	Account         string `bson:"account" json:"account"`
+	Balance         string `bson:"balance" json:"balance"`
+	BlockHeight     int    `bson:"block_height" json:"block_height"`
 }
 
-func fromDomain(s *domain.Subscription) *Subscription {
+// FromDomain converts domain.Subscription model to a MongoDB document representation
+func FromDomain(s *domain.Subscription) *Subscription {
 	if s == nil {
 		return nil
 	}
@@ -326,13 +325,14 @@ func fromDomain(s *domain.Subscription) *Subscription {
 	}
 }
 
-func toDomain(s *Subscription) *domain.Subscription {
+// ToDomain converts MongoDB document representation of Subscription to domain model
+func ToDomain(s *Subscription) *domain.Subscription {
 	if s == nil {
 		return nil
 	}
 
-	balace, b := new(big.Int).SetString(s.Balance, 10)
-	if !b {
+	balace, ok := new(big.Int).SetString(s.Balance, 10)
+	if !ok {
 		panic(fmt.Errorf("%s is not a valid bignumber representation", s.Balance))
 	}
 
@@ -350,14 +350,15 @@ func toDomain(s *Subscription) *domain.Subscription {
 	return sub
 }
 
-func toDomainSlice(subs []*Subscription) []*domain.Subscription {
+// ToDomainSlice converts slice of MongoDB documents to slice of domain models
+func ToDomainSlice(subs []*Subscription) []*domain.Subscription {
 	if subs == nil {
 		return nil
 	}
 
 	domainSlice := make([]*domain.Subscription, len(subs))
 	for i, s := range subs {
-		domainSlice[i] = toDomain(s)
+		domainSlice[i] = ToDomain(s)
 	}
 
 	return domainSlice

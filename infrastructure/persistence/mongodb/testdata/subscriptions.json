@@ -1,0 +1,57 @@
+[
+  {
+    "_id": "user1:36e7e52f-8430-47a7-a841-0cdb2d77b4f0",
+    "user_id": "user1",
+    "type": "movement",
+    "activated": true,
+    "currency": "eth",
+    "against_currency": "",
+    "account": "account1",
+    "balance": "0",
+    "block_height": 0
+  },
+  {
+    "_id": "user1:36e7e52f-8430-47a7-a841-0cdb2d77b4f1",
+    "user_id": "user1",
+    "type": "movement",
+    "activated": false,
+    "currency": "eth",
+    "against_currency": "",
+    "account": "account2",
+    "balance": "0",
+    "block_height": 0
+  },
+  {
+    "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f2",
+    "user_id": "user2",
+    "type": "movement",
+    "activated": true,
+    "currency": "eth",
+    "against_currency": "",
+    "account": "account3",
+    "balance": "0",
+    "block_height": 0
+  },
+  {
+    "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f3",
+    "user_id": "user2",
+    "type": "value",
+    "activated": true,
+    "currency": "btc",
+    "against_currency": "",
+    "account": "account4",
+    "balance": "0",
+    "block_height": 0
+  },
+  {
+    "_id": "user3:36e7e52f-8430-47a7-a841-0cdb2d77b4f4",
+    "user_id": "user3",
+    "type": "value",
+    "activated": false,
+    "currency": "btc",
+    "against_currency": "",
+    "account": "account5",
+    "balance": "0",
+    "block_height": 0
+  }
+]
