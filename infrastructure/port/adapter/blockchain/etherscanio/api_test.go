@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/ethereum/etherscanio"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/etherscanio"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )

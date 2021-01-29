@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/bitcoin/blockbook"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/blockbook"
 )
 
 const hostURL = "https://btc1.trezor.io"

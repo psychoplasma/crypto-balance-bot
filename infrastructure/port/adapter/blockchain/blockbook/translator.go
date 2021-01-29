@@ -7,7 +7,7 @@ import (
 	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
-// BitcoinTranslator is a translator for Blockchain.com API
+// BitcoinTranslator is a translator for Blockbook API
 type BitcoinTranslator struct{}
 
 // ToAccountMovements converts data returning from third-party service to .AccountMovement domain object

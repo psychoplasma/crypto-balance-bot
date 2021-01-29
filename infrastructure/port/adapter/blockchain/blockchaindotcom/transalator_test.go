@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/bitcoin/blockchaindotcom"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/blockchaindotcom"
 )
 
 func TestToAccountMovements(t *testing.T) {

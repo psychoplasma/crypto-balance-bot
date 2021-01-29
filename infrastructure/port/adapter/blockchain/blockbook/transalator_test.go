@@ -4,47 +4,41 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/bitcoin/blockchaindotcom"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/blockbook"
 )
 
 func TestToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr2 := "test-addr-2"
 	blockHeight := 10
-	txs := []blockchaindotcom.Transaction{
+	txs := []blockbook.Transaction{
 		{
 			BlockHeight: blockHeight,
-			Hash:        "hash1",
-			Inputs: []blockchaindotcom.Input{
+			BlockHash:   "hash1",
+			Inputs: []blockbook.Input{
 				{
-					PrevOutput: blockchaindotcom.Output{
-						Address: addr1,
-						Value:   big.NewInt(5),
-					},
+					Addresses: []string{addr1},
+					Value:     "5",
 				},
 				{
-					PrevOutput: blockchaindotcom.Output{
-						Address: addr2,
-						Value:   big.NewInt(3),
-					},
+					Addresses: []string{addr2},
+					Value:     "3",
 				},
 			},
-			Outputs: []blockchaindotcom.Output{
+			Outputs: []blockbook.Output{
 				{
-					Address: addr1,
-					Value:   big.NewInt(3),
+					Addresses: []string{addr1},
+					Value:     "3",
 				},
 				{
-					Address: addr2,
-					Value:   big.NewInt(5),
+					Addresses: []string{addr2},
+					Value:     "5",
 				},
 			},
 		},
 	}
 
-	tr := blockchaindotcom.BitcoinTranslator{}
-
-	mvs, err := tr.ToAccountMovements(addr1, txs)
+	mvs, err := new(blockbook.BitcoinTranslator).ToAccountMovements(addr1, txs)
 	if err != nil {
 		t.Fatal(err)
 	}
