@@ -10,8 +10,9 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain"
 )
 
-var (
-	pageLimit = 50
+const (
+	transactionStatusSuccess = 1
+	defaultPagingLimit       = 100
 )
 
 // Paging is a data structure returning from Blockbook's API
@@ -24,9 +25,9 @@ type Paging struct {
 // Input is a data structure returning from Blockbook's API
 type Input struct {
 	TxID      string   `json:"txid"`
-	VOut      int      `json:"vout"`
-	Sequence  int      `json:"sequence"`
-	Index     int      `json:"n"`
+	VOut      uint     `json:"vout"`
+	Sequence  uint64   `json:"sequence"`
+	Index     uint     `json:"n"`
 	Addresses []string `json:"addresses"`
 	IsAddress bool     `json:"isAddress"`
 	Value     string   `json:"value"`
@@ -35,7 +36,7 @@ type Input struct {
 
 // Output is a data structure returning from Blockbook's API
 type Output struct {
-	Index     int      `json:"n"`
+	Index     uint     `json:"n"`
 	Value     string   `json:"value"`
 	Spent     bool     `json:"spent"`
 	Addresses []string `json:"addresses"`
@@ -45,21 +46,45 @@ type Output struct {
 
 // Transaction is a data structure returning from Blockbook's API
 type Transaction struct {
-	BlockHeight   int      `json:"blockHeight"`
-	BlockHash     string   `json:"blockHash"`
-	BlockTime     int      `json:"blockTime"`
-	Confirmations int      `json:"confirmations"`
-	Value         string   `json:"value"`
-	ValueIn       string   `json:"valueIn"`
-	Fees          string   `json:"fees"`
-	Hex           string   `json:"hex"`
-	TxID          string   `json:"txid"`
-	Version       int      `json:"version"`
-	Inputs        []Input  `json:"vin"`
-	Outputs       []Output `json:"vout"`
+	BlockHeight      int              `json:"blockHeight"`
+	BlockHash        string           `json:"blockHash"`
+	BlockTime        uint64           `json:"blockTime"`
+	Confirmations    uint64           `json:"confirmations"`
+	EthereumSpecific EthereumSpecific `json:"ethereumSpecific,omitempty"`
+	Value            string           `json:"value"`
+	ValueIn          string           `json:"valueIn"`
+	Fees             string           `json:"fees"`
+	Hex              string           `json:"hex"`
+	TxID             string           `json:"txid"`
+	Version          int              `json:"version"`
+	Inputs           []Input          `json:"vin"`
+	Outputs          []Output         `json:"vout"`
+	TokenTransfers   []TokenTransfer  `json:"tokenTransfers,omitempty"`
 }
 
-// AddressTxs is a data structure returning from Blockchain.com API
+// TokenTransfer contains info about a token transfer done in a transaction
+type TokenTransfer struct {
+	Type     string `json:"type"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Token    string `json:"token"`
+	Name     string `json:"name"`
+	Symbol   string `json:"symbol"`
+	Decimals uint   `json:"decimals"`
+	Value    string `json:"value"`
+}
+
+// EthereumSpecific contains ethereum specific transaction data
+type EthereumSpecific struct {
+	Status   int    `json:"status"` // 1 OK, 0 Fail, -1 pending
+	Nonce    uint64 `json:"nonce"`
+	GasLimit uint   `json:"gasLimit"`
+	GasUsed  uint   `json:"gasUsed"`
+	GasPrice string `json:"gasPrice"`
+	Data     string `json:"data,omitempty"`
+}
+
+// AddressTxs is a data structure returning from Blockbook's API
 type AddressTxs struct {
 	Paging
 	Address            string        `json:"address"`
@@ -69,33 +94,42 @@ type AddressTxs struct {
 	TotalReceived      string        `json:"totalReceived"`
 	TotalSent          string        `json:"totalSent"`
 	TxCount            int           `json:"txs"`
-	Txs                []Transaction `json:"transactions"`
+	Transactions       []Transaction `json:"transactions"`
 }
 
-// BitcoinAPI implements CurrencyAPI for Bitcoin
-type BitcoinAPI struct {
-	hostURL string
-	t       blockchain.Translator
+// API implements CurrencyAPI for Blockbook
+type API struct {
+	hostURL     string
+	pagingLimit int
+	t           blockchain.Translator
 }
 
-// NewBitcoinAPI creates a new instance of BitcoinAPI
-func NewBitcoinAPI(hostURL string, t blockchain.Translator) *BitcoinAPI {
-	return &BitcoinAPI{
-		hostURL: hostURL,
-		t:       t,
+// NewAPI creates a new instance of BitcoinAPI
+func NewAPI(hostURL string, t blockchain.Translator, pagingLimit ...*int) *API {
+	api := &API{
+		hostURL:     hostURL,
+		pagingLimit: defaultPagingLimit,
+		t:           t,
 	}
+
+	for _, pl := range pagingLimit {
+		if pl != nil {
+			api.pagingLimit = *pl
+		}
+	}
+
+	return api
 }
 
-// GetTxsOfAddress fetches txs of the given address since the given block height
-func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
-	txs := []Transaction{}
+// GetAccountMovements fetches txs of the given address since the given block height
+func (a *API) GetAccountMovements(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
 	currPage := 1
 	at, err := a.fetchAddressTxs(address, sinceBlockHeight, currPage)
 	if err != nil {
 		return nil, err
 	}
 
-	txs = append(at.Txs, txs...)
+	txs := at.Transactions
 	totalPages := at.TotalPages
 
 	for currPage < totalPages {
@@ -104,7 +138,7 @@ func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*dom
 		if err != nil {
 			return nil, err
 		}
-		txs = append(txs, at.Txs...)
+		txs = append(txs, at.Transactions...)
 	}
 
 	return a.t.ToAccountMovements(address, txs)
@@ -112,8 +146,8 @@ func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*dom
 
 // API call to blockbook's api/v2/address endpoint
 // For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#get-address
-func (a *BitcoinAPI) fetchAddressTxs(address string, since int, page int) (*AddressTxs, error) {
-	url := fmt.Sprintf("%s/api/v2/address/%s?details=txs&page=%d&pageSize=%d&from=%d", a.hostURL, address, page, pageLimit, since)
+func (a *API) fetchAddressTxs(address string, since int, page int) (*AddressTxs, error) {
+	url := fmt.Sprintf("%s/api/v2/address/%s?details=txs&page=%d&pageSize=%d&from=%d", a.hostURL, address, page, a.pagingLimit, since)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
