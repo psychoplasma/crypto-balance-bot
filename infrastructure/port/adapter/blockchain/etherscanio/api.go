@@ -46,7 +46,7 @@ func NewEthereumAPI(t blockchain.Translator) *EthereumAPI {
 }
 
 // GetAccountMovements fetches txs of the given address since the given block height
-func (a *EthereumAPI) GetAccountMovements(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
+func (a *EthereumAPI) GetAccountMovements(address string, sinceBlockHeight uint64) (*domain.AccountMovements, error) {
 	txs, err := a.fetchAddressTxs(address, sinceBlockHeight)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (a *EthereumAPI) GetAccountMovements(address string, sinceBlockHeight int) 
 
 // API call to https://api.etherscan.io/api?module=account&action=txlist&address=.
 // For further info: https://etherscan.io/apis#accounts
-func (a *EthereumAPI) fetchAddressTxs(address string, startBlock int) ([]Transaction, error) {
+func (a *EthereumAPI) fetchAddressTxs(address string, startBlock uint64) ([]Transaction, error) {
 	url := fmt.Sprintf("https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=%d&sort=desc", address, startBlock)
 	resp, err := http.Get(url)
 	if err != nil {

@@ -24,7 +24,7 @@ func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) (
 			continue
 		}
 
-		blockHeight, err := strconv.ParseInt(tx.BlockHeight, 10, 64)
+		blockHeight, err := strconv.ParseUint(tx.BlockHeight, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("etherscanio ethereum transalation error, %s", err.Error())
 		}
@@ -34,14 +34,14 @@ func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) (
 			return nil, fmt.Errorf("etherscanio ethereum transalation error, cannot convert tx.Value(%s) to bigint", tx.Value)
 		}
 
-		// Any value transfers from this address will be reflected as a decrease in balance
+		// Any value transfers from this address will be reflected as a spent
 		if blockchain.NormalizeEthereumAddress(tx.From) == address {
-			am.AddBalanceChange(int(blockHeight), tx.Hash, new(big.Int).Neg(val))
+			am.SpendBalance(blockHeight, tx.Hash, val)
 		}
 
-		// Any value transfers to this address will be reflected as an increase in balance
+		// Any value transfers to this address will be reflected as a receive
 		if blockchain.NormalizeEthereumAddress(tx.To) == address {
-			am.AddBalanceChange(int(blockHeight), tx.Hash, val)
+			am.ReceiveBalance(blockHeight, tx.Hash, val)
 		}
 	}
 

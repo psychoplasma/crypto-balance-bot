@@ -26,7 +26,7 @@ func (tr BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 		// 	fmt.Printf("***block #%d ..%s..\n", tx.BlockHeight, tx.BlockHash)
 		// }
 
-		// Inputs will be reflected as a decrease in balance
+		// Inputs will be reflected as a spent
 		for _, in := range tx.Inputs {
 			if in.Addresses[0] != address {
 				continue
@@ -36,12 +36,12 @@ func (tr BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 			if !ok {
 				return nil, fmt.Errorf("bitcoin translation error, cannot convert in.Value(%s) to bigint", in.Value)
 			}
-			am.AddBalanceChange(tx.BlockHeight, tx.TxID, new(big.Int).Neg(val))
+			am.SpendBalance(tx.BlockHeight, tx.TxID, val)
 
 			// fmt.Printf("\t-%s in %s..\n", val.String(), tx.TxID[0:7])
 		}
 
-		// Outputs will be reflected as an increase in balance
+		// Outputs will be reflected as a receive
 		for _, out := range tx.Outputs {
 			if out.Addresses[0] != address {
 				continue
@@ -51,7 +51,7 @@ func (tr BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 			if !ok {
 				return nil, fmt.Errorf("bitcoin translation error, cannot convert out.Value(%s) to bigint", out.Value)
 			}
-			am.AddBalanceChange(tx.BlockHeight, tx.TxID, val)
+			am.ReceiveBalance(tx.BlockHeight, tx.TxID, val)
 
 			// fmt.Printf("\t+%s in %s..\n", val.String(), tx.TxID[0:7])
 		}
@@ -80,14 +80,14 @@ func (tr EthereumTranslator) ToAccountMovements(address string, v interface{}) (
 			return nil, fmt.Errorf("blockbook ethereum translation error, cannot convert in.Value(%s) to bigint", tx.Value)
 		}
 
-		// Any value transfers from this address will be reflected as a decrease in balance
+		// Any value transfers from this address will be reflected as a spent
 		if blockchain.NormalizeEthereumAddress(tx.Inputs[0].Addresses[0]) == address {
-			am.AddBalanceChange(tx.BlockHeight, tx.TxID, new(big.Int).Neg(val))
+			am.SpendBalance(tx.BlockHeight, tx.TxID, val)
 		}
 
-		// Any value transfers to this address will be reflected as an increase in balance
+		// Any value transfers to this address will be reflected as a receive
 		if blockchain.NormalizeEthereumAddress(tx.Outputs[0].Addresses[0]) == address {
-			am.AddBalanceChange(tx.BlockHeight, tx.TxID, val)
+			am.ReceiveBalance(tx.BlockHeight, tx.TxID, val)
 		}
 	}
 

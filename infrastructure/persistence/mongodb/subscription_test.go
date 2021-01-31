@@ -241,13 +241,16 @@ func helperCreateAndPopulateDB(t *testing.T) func() {
 		t.Fatal(fmt.Errorf("%s database doesn't exist", dbName))
 	}
 
-	if err := db.CreateCollection(ctx, mongodb.CollectionName); err != nil {
-		t.Fatal(err)
-	}
-
 	coll := db.Collection(mongodb.CollectionName)
-	if coll == nil {
-		t.Fatal(fmt.Errorf("%s collection doesn't exist", mongodb.CollectionName))
+	if coll != nil {
+		// t.Fatal(fmt.Errorf("%s collection doesn't exist", mongodb.CollectionName))
+		if err := db.Drop(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := db.CreateCollection(ctx, mongodb.CollectionName); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Create the corresponding table if it does not exist in test db

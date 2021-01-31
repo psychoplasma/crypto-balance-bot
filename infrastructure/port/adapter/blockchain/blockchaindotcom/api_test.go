@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetAccountMovements(t *testing.T) {
-	blockNum := 183579
+	blockNum := uint64(183579)
 	api := blockchaindotcom.NewBitcoinAPI(blockchaindotcom.BitcoinTranslator{})
 
 	mv, err := api.GetAccountMovements("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", blockNum)

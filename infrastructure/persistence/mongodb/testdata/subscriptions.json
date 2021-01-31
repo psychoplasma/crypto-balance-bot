@@ -7,8 +7,10 @@
     "currency": "eth",
     "against_currency": "",
     "account": "account1",
-    "balance": "0",
-    "block_height": 0
+    "total_received": "0",
+    "total_spent": "0",
+    "block_height": 0,
+    "starting_block_height": 0
   },
   {
     "_id": "user1:36e7e52f-8430-47a7-a841-0cdb2d77b4f1",
@@ -18,8 +20,10 @@
     "currency": "eth",
     "against_currency": "",
     "account": "account2",
-    "balance": "0",
-    "block_height": 0
+    "total_received": "0",
+    "total_spent": "0",
+    "block_height": 0,
+    "starting_block_height": 0
   },
   {
     "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f2",
@@ -29,8 +33,10 @@
     "currency": "eth",
     "against_currency": "",
     "account": "account3",
-    "balance": "0",
-    "block_height": 0
+    "total_received": "0",
+    "total_spent": "0",
+    "block_height": 0,
+    "starting_block_height": 0
   },
   {
     "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f3",
@@ -40,8 +46,10 @@
     "currency": "btc",
     "against_currency": "",
     "account": "account4",
-    "balance": "0",
-    "block_height": 0
+    "total_received": "0",
+    "total_spent": "0",
+    "block_height": 0,
+    "starting_block_height": 0
   },
   {
     "_id": "user3:36e7e52f-8430-47a7-a841-0cdb2d77b4f4",
@@ -51,7 +59,9 @@
     "currency": "btc",
     "against_currency": "",
     "account": "account5",
-    "balance": "0",
-    "block_height": 0
+    "total_received": "0",
+    "total_spent": "0",
+    "block_height": 0,
+    "starting_block_height": 0
   }
 ]

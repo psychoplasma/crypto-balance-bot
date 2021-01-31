@@ -6,7 +6,7 @@ import "math/big"
 type CurrencyService interface {
 	// GetAccountMovements fetches txs of the given address since the given block height(exclusive)
 	// and converts it to account movements if there are any
-	GetAccountMovements(address string, sinceBlockHeight int) (*AccountMovements, error)
+	GetAccountMovements(address string, sinceBlockHeight uint64) (*AccountMovements, error)
 }
 
 // Currency is a value object

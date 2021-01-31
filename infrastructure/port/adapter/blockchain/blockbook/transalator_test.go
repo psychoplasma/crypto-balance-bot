@@ -11,7 +11,7 @@ import (
 func TestBitcoinTranslator_ToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr2 := "test-addr-2"
-	blockHeight := 10
+	blockHeight := uint64(10)
 	addrTxs := []blockbook.Transaction{
 		{
 			BlockHeight: blockHeight,
@@ -57,7 +57,7 @@ func TestBitcoinTranslator_ToAccountMovements(t *testing.T) {
 
 	balanceDiff := big.NewInt(0)
 	for _, ch := range mvs.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Amount)
+		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
 	}
 
 	if balanceDiff.Cmp(big.NewInt(-2)) != 0 {
@@ -68,7 +68,7 @@ func TestBitcoinTranslator_ToAccountMovements(t *testing.T) {
 func TestEthereumTranslator_ToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr2 := "test-addr-2"
-	blockHeight := 10
+	blockHeight := uint64(10)
 	value := uint64(5)
 	addrTxs := []blockbook.Transaction{
 		{
@@ -103,13 +103,13 @@ func TestEthereumTranslator_ToAccountMovements(t *testing.T) {
 		t.Fatalf("expected to have changes at block#%d but got nothing", blockHeight)
 	}
 
-	if len(mvs.Changes[blockHeight]) != 2 {
-		t.Fatalf("expected movement's balance change count is %d but got %d", 2, len(mvs.Changes[blockHeight]))
+	if len(mvs.Changes[blockHeight]) != 1 {
+		t.Fatalf("expected movement's balance change count is %d but got %d", 1, len(mvs.Changes[blockHeight]))
 	}
 
 	balanceDiff := big.NewInt(0)
 	for _, ch := range mvs.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Amount)
+		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
 	}
 
 	if new(big.Int).Abs(balanceDiff).Uint64() == -value {

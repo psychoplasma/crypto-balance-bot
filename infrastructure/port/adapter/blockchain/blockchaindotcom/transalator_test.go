@@ -10,7 +10,7 @@ import (
 func TestToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr2 := "test-addr-2"
-	blockHeight := 10
+	blockHeight := uint64(10)
 	txs := []blockchaindotcom.Transaction{
 		{
 			BlockHeight: blockHeight,
@@ -63,7 +63,7 @@ func TestToAccountMovements(t *testing.T) {
 
 	balanceDiff := big.NewInt(0)
 	for _, ch := range mvs.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Amount)
+		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
 	}
 
 	if balanceDiff.Cmp(big.NewInt(-2)) != 0 {

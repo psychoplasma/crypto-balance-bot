@@ -46,15 +46,17 @@ type SubscriptionRepository interface {
 
 // Subscription is a root aggragate
 type Subscription struct {
-	id          string
-	userID      string
-	stype       SubscriptionType
-	activated   bool
-	c           Currency
-	ac          Currency
-	account     string
-	balance     *big.Int
-	blockHeight int
+	id                  string
+	userID              string
+	stype               SubscriptionType
+	activated           bool
+	blockHeight         uint64
+	startingBlockHeight uint64
+	c                   Currency
+	ac                  Currency
+	account             string
+	totalReceived       *big.Int
+	totalSpent          *big.Int
 }
 
 // UserIDFrom extracts UserID from SubscriptionID.
@@ -88,13 +90,14 @@ func NewSubscription(
 	}
 
 	s := &Subscription{
-		id:      id,
-		userID:  userID,
-		stype:   stype,
-		c:       c,
-		ac:      against,
-		account: account,
-		balance: new(big.Int),
+		id:            id,
+		userID:        userID,
+		stype:         stype,
+		c:             c,
+		ac:            against,
+		account:       account,
+		totalReceived: new(big.Int),
+		totalSpent:    new(big.Int),
 	}
 
 	return s, nil
@@ -109,20 +112,21 @@ func DeepCopySubscription(
 	account string,
 	c Currency,
 	against Currency,
-	balance *big.Int,
-	blockHeight int,
+	totalReceived *big.Int,
+	totalSpent *big.Int,
+	blockHeight uint64,
+	staringBlockHeight uint64,
 ) (*Subscription, error) {
 	s, err := NewSubscription(id, userID, stype, account, c, against)
 	if err != nil {
 		return nil, err
 	}
 
-	s.setBalance(balance)
-	s.setBlockHeight(blockHeight)
-
-	if activated {
-		s.Activate()
-	}
+	s.activated = activated
+	s.blockHeight = blockHeight
+	s.startingBlockHeight = staringBlockHeight
+	s.totalReceived = totalReceived
+	s.totalSpent = totalSpent
 
 	return s, nil
 }
@@ -132,14 +136,26 @@ func (s *Subscription) Account() string {
 	return s.account
 }
 
-// Balance returns the last checked balance
-func (s *Subscription) Balance() *big.Int {
-	return s.balance
+// TotalReceived returns the total received balance
+// since the starting blockheight of the subscription
+func (s *Subscription) TotalReceived() *big.Int {
+	return s.totalReceived
+}
+
+// TotalSpent returns the total spent balance
+// since the starting blockheight of the subscription
+func (s *Subscription) TotalSpent() *big.Int {
+	return s.totalSpent
 }
 
 // BlockHeight returns the last block height that balance is updated
-func (s *Subscription) BlockHeight() int {
+func (s *Subscription) BlockHeight() uint64 {
 	return s.blockHeight
+}
+
+// StartingBlockHeight returns the staring block height
+func (s *Subscription) StartingBlockHeight() uint64 {
+	return s.startingBlockHeight
 }
 
 // AgainstCurrency returns against currency property
@@ -181,15 +197,14 @@ func (s *Subscription) ToString() string {
 		status = "Deactive"
 	}
 
-	log.Printf("%+v", s)
-
 	return fmt.Sprintf(
-		"ID: %s\nType: %s\nAsset: %s\nStatus: %s\nBalance: %s\nLast Updated Block Height: %d",
+		"ID: %s\nType: %s\nAsset: %s\nStatus: %s\nTotalReceived: %s\nTotalSpent: %s\nLast Updated Block Height: %d",
 		s.ID(),
 		s.Account(),
 		s.Currency().Symbol,
 		status,
-		s.Balance().String(),
+		s.TotalReceived().String(),
+		s.TotalSpent().String(),
 		s.BlockHeight(),
 	)
 }
@@ -211,7 +226,13 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 		}
 
 		for _, c := range acms.Changes[blockHeight] {
-			s.setBalance(new(big.Int).Add(s.Balance(), c.Amount))
+			switch c.Type {
+			case ReceivedBalance:
+				s.receiveBalance(c.Amount)
+				break
+			case SpentBalance:
+				s.spendBalance(c.Amount)
+			}
 		}
 
 		s.setBlockHeight(blockHeight)
@@ -237,11 +258,15 @@ func (s *Subscription) Deactivate() {
 	s.activated = false
 }
 
-func (s *Subscription) setBalance(b *big.Int) {
-	s.balance = b
+func (s *Subscription) receiveBalance(b *big.Int) {
+	s.totalReceived = new(big.Int).Add(s.totalReceived, b)
 }
 
-func (s *Subscription) setBlockHeight(h int) {
+func (s *Subscription) spendBalance(b *big.Int) {
+	s.totalSpent = new(big.Int).Add(s.totalSpent, b)
+}
+
+func (s *Subscription) setBlockHeight(h uint64) {
 	s.blockHeight = h
 }
 

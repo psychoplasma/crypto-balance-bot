@@ -6,37 +6,65 @@ import (
 	"time"
 )
 
+// Type of balance change
+const (
+	ReceivedBalance = iota
+	SpentBalance
+)
+
 // BalanceChange represents a change in balance
 type balanceChange struct {
+	Type   int
 	Amount *big.Int
 	TxHash string
+}
+
+func (bc balanceChange) Value() *big.Int {
+	switch bc.Type {
+	case ReceivedBalance:
+		return big.NewInt(bc.Amount.Int64())
+	case SpentBalance:
+		return new(big.Int).Neg(bc.Amount)
+	default:
+		return big.NewInt(0)
+	}
 }
 
 // AccountMovements represents the total change
 // made to Account in a certain time range
 type AccountMovements struct {
 	Address string
-	Blocks  []int
-	Changes map[int][]*balanceChange
+	Blocks  []uint64
+	Changes map[uint64][]*balanceChange
 }
 
 // NewAccountMovements creates a new instance of AccountMovement
 func NewAccountMovements(address string) *AccountMovements {
 	return &AccountMovements{
 		Address: address,
-		Changes: make(map[int][]*balanceChange, 0),
-		Blocks:  []int{},
+		Changes: make(map[uint64][]*balanceChange, 0),
+		Blocks:  []uint64{},
 	}
 }
 
 // Sort sorts the changes by block height in ascending order
 func (am *AccountMovements) Sort() *AccountMovements {
-	sort.Ints(am.Blocks)
+	// Sort am.Blocks in increasing order
+	sort.Slice(am.Blocks, func(i, j int) bool { return am.Blocks[i] < am.Blocks[j] })
 	return am
 }
 
-// AddBalanceChange adds a balance change to the list of changes at the given block height
-func (am *AccountMovements) AddBalanceChange(blockHeight int, txHash string, amount *big.Int) {
+// ReceiveBalance adds a balance change as received to the list of changes at the given block height
+func (am *AccountMovements) ReceiveBalance(blockHeight uint64, txHash string, amount *big.Int) {
+	am.addBalanceChange(blockHeight, txHash, amount, ReceivedBalance)
+}
+
+// SpendBalance adds a balance change as spent to the list of changes at the given block height
+func (am *AccountMovements) SpendBalance(blockHeight uint64, txHash string, amount *big.Int) {
+	am.addBalanceChange(blockHeight, txHash, amount, SpentBalance)
+}
+
+func (am *AccountMovements) addBalanceChange(blockHeight uint64, txHash string, amount *big.Int, bType int) {
 	if am.Changes[blockHeight] == nil {
 		am.Blocks = append(am.Blocks, blockHeight)
 		am.Changes[blockHeight] = make([]*balanceChange, 0)
@@ -47,6 +75,7 @@ func (am *AccountMovements) AddBalanceChange(blockHeight int, txHash string, amo
 		&balanceChange{
 			Amount: amount,
 			TxHash: txHash,
+			Type:   bType,
 		},
 	)
 }

@@ -12,7 +12,7 @@ func TestToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
 	addr1MixedCase := "teSt-aDdR-1"
 	addr2 := "test-addr-2"
-	blockHeight := 10
+	blockHeight := uint64(10)
 	txs := []etherscanio.Transaction{
 		{
 			BlockHeight: fmt.Sprint(blockHeight),
@@ -49,7 +49,7 @@ func TestToAccountMovements(t *testing.T) {
 
 	balanceDiff := new(big.Int)
 	for _, ch := range mv.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Amount)
+		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
 	}
 
 	if balanceDiff.Cmp(big.NewInt(-100)) != 0 {

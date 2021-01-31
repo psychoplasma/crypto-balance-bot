@@ -39,7 +39,7 @@ func MovementFormatter(v interface{}) string {
 			// For example amount:5, symbol:eth, decimal: 1000
 			// then the resulting string would be " => 0.00500 eth"
 			chmsg += fmt.Sprintf(" => %s %s",
-				new(big.Float).Quo(new(big.Float).SetInt(c.Amount),
+				new(big.Float).Quo(new(big.Float).SetInt(c.Value()),
 					new(big.Float).SetInt(currency.Decimal)).Text('f', 6),
 				currency.Symbol)
 		}

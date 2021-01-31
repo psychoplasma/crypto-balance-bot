@@ -1,8 +1,6 @@
 package blockchaindotcom
 
 import (
-	"math/big"
-
 	domain "github.com/psychoplasma/crypto-balance-bot"
 )
 
@@ -15,22 +13,22 @@ func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 	am := domain.NewAccountMovements(address)
 
 	for _, tx := range txs {
-		// Inputs will be reflected as a decrease in balance
+		// Inputs will be reflected as a spent
 		for _, in := range tx.Inputs {
 			if in.PrevOutput.Address != address {
 				continue
 			}
 
-			am.AddBalanceChange(tx.BlockHeight, tx.Hash, new(big.Int).Neg(in.PrevOutput.Value))
+			am.SpendBalance(tx.BlockHeight, tx.Hash, in.PrevOutput.Value)
 		}
 
-		// Outputs will be reflected as an increase in balance
+		// Outputs will be reflected as a receive
 		for _, out := range tx.Outputs {
 			if out.Address != address {
 				continue
 			}
 
-			am.AddBalanceChange(tx.BlockHeight, tx.Hash, out.Value)
+			am.ReceiveBalance(tx.BlockHeight, tx.Hash, out.Value)
 		}
 	}
 

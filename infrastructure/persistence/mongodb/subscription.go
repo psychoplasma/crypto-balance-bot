@@ -295,15 +295,17 @@ func (r *SubscriptionRepository) delete(id string) error {
 
 // Subscription represents a document in MongoDB corresponding to domain.Subscription
 type Subscription struct {
-	ID              string `bson:"_id" json:"_id"`
-	UserID          string `bson:"user_id" json:"user_id"`
-	Type            string `bson:"type" json:"type"`
-	Activated       bool   `bson:"activated" json:"activated"`
-	Currency        string `bson:"currency" json:"currency"`
-	AgainstCurrency string `bson:"against_currency" json:"against_currency"`
-	Account         string `bson:"account" json:"account"`
-	Balance         string `bson:"balance" json:"balance"`
-	BlockHeight     int    `bson:"block_height" json:"block_height"`
+	ID                  string `bson:"_id" json:"_id"`
+	UserID              string `bson:"user_id" json:"user_id"`
+	Type                string `bson:"type" json:"type"`
+	Activated           bool   `bson:"activated" json:"activated"`
+	Currency            string `bson:"currency" json:"currency"`
+	AgainstCurrency     string `bson:"against_currency" json:"against_currency"`
+	Account             string `bson:"account" json:"account"`
+	BlockHeight         uint64 `bson:"block_height" json:"block_height"`
+	TotalReceived       string `bson:"total_received" json:"total_received"`
+	TotalSpent          string `bson:"total_spent" json:"total_spent"`
+	StartingBlockHeight uint64 `bson:"starting_block_height" json:"starting_block_height"`
 }
 
 // FromDomain converts domain.Subscription model to a MongoDB document representation
@@ -313,15 +315,17 @@ func FromDomain(s *domain.Subscription) *Subscription {
 	}
 
 	return &Subscription{
-		ID:              s.ID(),
-		UserID:          s.UserID(),
-		Type:            string(s.Type()),
-		Activated:       s.IsActivated(),
-		Currency:        s.Currency().Symbol,
-		AgainstCurrency: s.AgainstCurrency().Symbol,
-		Account:         s.Account(),
-		Balance:         s.Balance().String(),
-		BlockHeight:     s.BlockHeight(),
+		ID:                  s.ID(),
+		UserID:              s.UserID(),
+		Type:                string(s.Type()),
+		Activated:           s.IsActivated(),
+		Currency:            s.Currency().Symbol,
+		AgainstCurrency:     s.AgainstCurrency().Symbol,
+		Account:             s.Account(),
+		BlockHeight:         s.BlockHeight(),
+		StartingBlockHeight: s.StartingBlockHeight(),
+		TotalReceived:       s.TotalReceived().String(),
+		TotalSpent:          s.TotalSpent().String(),
 	}
 }
 
@@ -331,9 +335,14 @@ func ToDomain(s *Subscription) *domain.Subscription {
 		return nil
 	}
 
-	balace, ok := new(big.Int).SetString(s.Balance, 10)
+	totalReceived, ok := new(big.Int).SetString(s.TotalReceived, 10)
 	if !ok {
-		panic(fmt.Errorf("%s is not a valid bignumber representation", s.Balance))
+		panic(fmt.Errorf("%s is not a valid bignumber representation", s.TotalReceived))
+	}
+
+	totalSpent, ok := new(big.Int).SetString(s.TotalSpent, 10)
+	if !ok {
+		panic(fmt.Errorf("%s is not a valid bignumber representation", s.TotalSpent))
 	}
 
 	sub, _ := domain.DeepCopySubscription(
@@ -344,8 +353,10 @@ func ToDomain(s *Subscription) *domain.Subscription {
 		s.Account,
 		services.CurrencyFactory[s.Currency],
 		services.CurrencyFactory[s.AgainstCurrency],
-		balace,
+		totalReceived,
+		totalSpent,
 		s.BlockHeight,
+		s.StartingBlockHeight,
 	)
 	return sub
 }

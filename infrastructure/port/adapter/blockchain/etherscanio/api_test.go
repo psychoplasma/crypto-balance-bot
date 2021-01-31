@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetAccountMovements(t *testing.T) {
-	blockNum := 11000000
+	blockNum := uint64(11000000)
 	api := etherscanio.NewEthereumAPI(etherscanio.EthereumTranslator{})
 
 	mv, err := api.GetAccountMovements("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", blockNum)

@@ -46,7 +46,7 @@ type Output struct {
 
 // Transaction is a data structure returning from Blockbook's API
 type Transaction struct {
-	BlockHeight      int              `json:"blockHeight"`
+	BlockHeight      uint64           `json:"blockHeight"`
 	BlockHash        string           `json:"blockHash"`
 	BlockTime        uint64           `json:"blockTime"`
 	Confirmations    uint64           `json:"confirmations"`
@@ -93,7 +93,7 @@ type AddressTxs struct {
 	UnconfirmedTxs     int           `json:"unconfirmedTxs"`
 	TotalReceived      string        `json:"totalReceived"`
 	TotalSent          string        `json:"totalSent"`
-	TxCount            int           `json:"txs"`
+	TxCount            uint64        `json:"txs"`
 	Transactions       []Transaction `json:"transactions"`
 }
 
@@ -122,7 +122,7 @@ func NewAPI(hostURL string, t blockchain.Translator, pagingLimit ...*int) *API {
 }
 
 // GetAccountMovements fetches txs of the given address since the given block height
-func (a *API) GetAccountMovements(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
+func (a *API) GetAccountMovements(address string, sinceBlockHeight uint64) (*domain.AccountMovements, error) {
 	currPage := 1
 	at, err := a.fetchAddressTxs(address, sinceBlockHeight, currPage)
 	if err != nil {
@@ -146,7 +146,7 @@ func (a *API) GetAccountMovements(address string, sinceBlockHeight int) (*domain
 
 // API call to blockbook's api/v2/address endpoint
 // For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#get-address
-func (a *API) fetchAddressTxs(address string, since int, page int) (*AddressTxs, error) {
+func (a *API) fetchAddressTxs(address string, since uint64, page int) (*AddressTxs, error) {
 	url := fmt.Sprintf("%s/api/v2/address/%s?details=txs&page=%d&pageSize=%d&from=%d", a.hostURL, address, page, a.pagingLimit, since)
 	resp, err := http.Get(url)
 	if err != nil {

@@ -106,14 +106,6 @@ func TestSubscriptionRepository_Save(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_Add_ExistingSubscription_WithDifferentUserID(t *testing.T) {
-	testItem, _ := domain.NewSubscription("1", "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{})
-
-	if err := subsRepo.Save(testItem); err == nil {
-		t.Fatalf("expecting an error, but got nothing")
-	}
-}
-
 func TestSubscriptionRepository_Remove(t *testing.T) {
 	expectedSize := subsRepo.Size() - 1
 	testItem := testSubs[0]

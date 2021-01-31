@@ -28,7 +28,7 @@ type Output struct {
 
 // Transaction is a data structure returning from Blockchain.com API
 type Transaction struct {
-	BlockHeight int      `json:"block_height"`
+	BlockHeight uint64   `json:"block_height"`
 	Hash        string   `json:"hash"`
 	Inputs      []Input  `json:"inputs"`
 	Outputs     []Output `json:"out"`
@@ -59,7 +59,7 @@ func NewBitcoinAPI(t blockchain.Translator) *BitcoinAPI {
 // rather guarantees that txs at sinceBlockHeight will be included. There may be
 // past transactions as well. Therefore the changes should be applied in
 // an idempotent way in the domain.
-func (a *BitcoinAPI) GetAccountMovements(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
+func (a *BitcoinAPI) GetAccountMovements(address string, sinceBlockHeight uint64) (*domain.AccountMovements, error) {
 	txs := []Transaction{}
 	ai, err := a.fetchAddressInfo(address, pageLimit, 0)
 	if err != nil {
