@@ -54,12 +54,12 @@ func NewBitcoinAPI(t blockchain.Translator) *BitcoinAPI {
 	}
 }
 
-// GetTxsOfAddress fetches txs of the given address since the given block height.
+// GetAccountMovements fetches txs of the given address since the given block height.
 // Worth to mention that this does not fetches since exact sinceBlockHeight,
 // rather guarantees that txs at sinceBlockHeight will be included. There may be
 // past transactions as well. Therefore the changes should be applied in
 // an idempotent way in the domain.
-func (a *BitcoinAPI) GetTxsOfAddress(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
+func (a *BitcoinAPI) GetAccountMovements(address string, sinceBlockHeight int) (*domain.AccountMovements, error) {
 	txs := []Transaction{}
 	ai, err := a.fetchAddressInfo(address, pageLimit, 0)
 	if err != nil {

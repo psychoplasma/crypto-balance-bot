@@ -11,11 +11,11 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
-func TestGetTxsOfAddress(t *testing.T) {
+func TestGetAccountMovements(t *testing.T) {
 	blockNum := 11000000
 	api := etherscanio.NewEthereumAPI(etherscanio.EthereumTranslator{})
 
-	mv, err := api.GetTxsOfAddress("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", blockNum)
+	mv, err := api.GetAccountMovements("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}

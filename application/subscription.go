@@ -301,7 +301,7 @@ func (sa *SubscriptionApplication) checkAndApplyAccountMovements(s *domain.Subsc
 		return fmt.Errorf("no currency service found for %s", s.Currency().Symbol)
 	}
 
-	acm, err := cs.GetTxsOfAddress(s.Account(), s.BlockHeight()+1)
+	acm, err := cs.GetAccountMovements(s.Account(), s.BlockHeight()+1)
 	if err != nil {
 		return err
 	}

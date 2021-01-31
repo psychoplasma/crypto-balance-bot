@@ -11,11 +11,11 @@ import (
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
-func TestGetTxsOfAddress(t *testing.T) {
+func TestGetAccountMovements(t *testing.T) {
 	blockNum := 183579
 	api := blockchaindotcom.NewBitcoinAPI(blockchaindotcom.BitcoinTranslator{})
 
-	mv, err := api.GetTxsOfAddress("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", blockNum)
+	mv, err := api.GetAccountMovements("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}

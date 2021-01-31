@@ -4,8 +4,9 @@ import "math/big"
 
 // CurrencyService represents API to fetch relavent info about account for the given currency
 type CurrencyService interface {
-	// GetTxsOfAddress fetches txs of the given address since the given block height(exclusive)
-	GetTxsOfAddress(address string, sinceBlockHeight int) (*AccountMovements, error)
+	// GetAccountMovements fetches txs of the given address since the given block height(exclusive)
+	// and converts it to account movements if there are any
+	GetAccountMovements(address string, sinceBlockHeight int) (*AccountMovements, error)
 }
 
 // Currency is a value object
