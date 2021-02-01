@@ -152,7 +152,7 @@ func TestSubscriptionRepository_Save(t *testing.T) {
 	}
 
 	expectedSize := r.Size() + 1
-	testItem, _ := domain.NewSubscription(r.NextIdentity("user3"), "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{})
+	testItem, _ := domain.NewSubscription(r.NextIdentity("user3"), "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{}, 0)
 
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)

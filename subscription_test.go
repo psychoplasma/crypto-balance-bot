@@ -14,7 +14,7 @@ func TestApply(t *testing.T) {
 	mv1 := domain.NewAccountMovements(addr)
 	mv1.ReceiveBalance(10, "txhash-test1", big.NewInt(5))
 
-	s, err := domain.NewSubscription("sub-1", "user-1", domain.MovementSubscription, addr, services.ETH, services.BTC)
+	s, err := domain.NewSubscription("sub-1", "user-1", domain.MovementSubscription, addr, services.ETH, services.BTC, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestApply_WithAlreadyAppliedMovements(t *testing.T) {
 	mv1 := domain.NewAccountMovements(addr)
 	mv1.ReceiveBalance(10, "txhash-test1", big.NewInt(5))
 
-	s, err := domain.NewSubscription("sub-1", "user-1", domain.MovementSubscription, addr, services.ETH, services.BTC)
+	s, err := domain.NewSubscription("sub-1", "user-1", domain.MovementSubscription, addr, services.ETH, services.BTC, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

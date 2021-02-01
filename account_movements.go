@@ -22,7 +22,7 @@ type balanceChange struct {
 func (bc balanceChange) Value() *big.Int {
 	switch bc.Type {
 	case ReceivedBalance:
-		return big.NewInt(bc.Amount.Int64())
+		return new(big.Int).Set(bc.Amount)
 	case SpentBalance:
 		return new(big.Int).Neg(bc.Amount)
 	default:
@@ -49,7 +49,6 @@ func NewAccountMovements(address string) *AccountMovements {
 
 // Sort sorts the changes by block height in ascending order
 func (am *AccountMovements) Sort() *AccountMovements {
-	// Sort am.Blocks in increasing order
 	sort.Slice(am.Blocks, func(i, j int) bool { return am.Blocks[i] < am.Blocks[j] })
 	return am
 }
@@ -73,7 +72,7 @@ func (am *AccountMovements) addBalanceChange(blockHeight uint64, txHash string, 
 	am.Changes[blockHeight] = append(
 		am.Changes[blockHeight],
 		&balanceChange{
-			Amount: amount,
+			Amount: new(big.Int).Set(amount),
 			TxHash: txHash,
 			Type:   bType,
 		},

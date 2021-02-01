@@ -1,12 +1,10 @@
 package blockbook
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/net"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain"
 )
 
@@ -81,7 +79,7 @@ type EthereumSpecific struct {
 	GasLimit uint   `json:"gasLimit"`
 	GasUsed  uint   `json:"gasUsed"`
 	GasPrice string `json:"gasPrice"`
-	Data     string `json:"data,omitempty"`
+	Data     string `json:"data"`
 }
 
 // AddressTxs is a data structure returning from Blockbook's API
@@ -94,7 +92,15 @@ type AddressTxs struct {
 	TotalReceived      string        `json:"totalReceived"`
 	TotalSent          string        `json:"totalSent"`
 	TxCount            uint64        `json:"txs"`
-	Transactions       []Transaction `json:"transactions"`
+	Transactions       []Transaction `json:"transactions,omitempty"`
+	TxIDs              []string      `json:"txids,omitempty"`
+}
+
+// Status is a data structure returning from Blockbook's API
+type Status struct {
+	Blockbook *struct {
+		BestHeight uint64 `json:"bestHeight"`
+	} `json:"blockbook"`
 }
 
 // API implements CurrencyAPI for Blockbook
@@ -144,24 +150,40 @@ func (a *API) GetAccountMovements(address string, sinceBlockHeight uint64) (*dom
 	return a.t.ToAccountMovements(address, txs)
 }
 
+// GetLatestBlockHeight fetches the latest block number
+func (a *API) GetLatestBlockHeight() (uint64, error) {
+	s, err := a.fetchStatus()
+	if err != nil {
+		return 0, err
+	}
+
+	if s.Blockbook == nil {
+		return 0, fmt.Errorf("empty blockbook status")
+	}
+
+	return s.Blockbook.BestHeight, nil
+}
+
 // API call to blockbook's api/v2/address endpoint
 // For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#get-address
 func (a *API) fetchAddressTxs(address string, since uint64, page int) (*AddressTxs, error) {
 	url := fmt.Sprintf("%s/api/v2/address/%s?details=txs&page=%d&pageSize=%d&from=%d", a.hostURL, address, page, a.pagingLimit, since)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, errors.New(resp.Status)
-	}
-
 	ad := &AddressTxs{}
-	defer resp.Body.Close()
-	if err := json.NewDecoder(resp.Body).Decode(ad); err != nil {
+	if err := net.GetJSON(url, &ad); err != nil {
 		return nil, err
 	}
 
 	return ad, nil
+}
+
+// API call to blockbook's api/v2 endpoint
+// For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#status
+func (a *API) fetchStatus() (*Status, error) {
+	url := fmt.Sprintf("%s/api/v2", a.hostURL)
+	s := &Status{}
+	if err := net.GetJSON(url, &s); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

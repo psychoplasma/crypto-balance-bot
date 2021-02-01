@@ -101,3 +101,15 @@ func TestGetAccountMovements_Ethereum(t *testing.T) {
 		}
 	}
 }
+
+func TestGetLatestBlockHeight(t *testing.T) {
+	api := blockbook.NewAPI(bitcoinHostURL, blockbook.BitcoinTranslator{})
+	bh, err := api.GetLatestBlockHeight()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bh == 0 {
+		t.Fatal("expected anything but 0")
+	}
+}

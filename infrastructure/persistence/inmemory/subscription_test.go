@@ -12,14 +12,14 @@ var subsRepo = inmemory.NewSubscriptionRepository()
 var testSubs = []*domain.Subscription{}
 
 func populateSubsData() {
-	s1, _ := domain.NewSubscription("1", "user1", domain.MovementSubscription, "account-1", domain.Currency{}, domain.Currency{})
+	s1, _ := domain.NewSubscription("1", "user1", domain.MovementSubscription, "account-1", domain.Currency{}, domain.Currency{}, 0)
 	s1.Activate()
-	s2, _ := domain.NewSubscription("2", "user1", domain.MovementSubscription, "account-2", domain.Currency{}, domain.Currency{})
-	s3, _ := domain.NewSubscription("3", "user2", domain.MovementSubscription, "account-3", domain.Currency{}, domain.Currency{})
+	s2, _ := domain.NewSubscription("2", "user1", domain.MovementSubscription, "account-2", domain.Currency{}, domain.Currency{}, 0)
+	s3, _ := domain.NewSubscription("3", "user2", domain.MovementSubscription, "account-3", domain.Currency{}, domain.Currency{}, 0)
 	s3.Activate()
-	s4, _ := domain.NewSubscription("4", "user2", domain.ValueSubscription, "account-4", domain.Currency{}, domain.Currency{})
+	s4, _ := domain.NewSubscription("4", "user2", domain.ValueSubscription, "account-4", domain.Currency{}, domain.Currency{}, 0)
 	s4.Activate()
-	s5, _ := domain.NewSubscription("5", "user3", domain.ValueSubscription, "account-5", domain.Currency{}, domain.Currency{})
+	s5, _ := domain.NewSubscription("5", "user3", domain.ValueSubscription, "account-5", domain.Currency{}, domain.Currency{}, 0)
 
 	testSubs = append(testSubs, s1, s2, s3, s4, s5)
 	subsRepo.Save(s1)
@@ -88,7 +88,7 @@ func TestSubscriptionRepository_GetAllAcivatedValues(t *testing.T) {
 
 func TestSubscriptionRepository_Save(t *testing.T) {
 	expectedSize := len(testSubs) + 1
-	testItem, _ := domain.NewSubscription("6", "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{})
+	testItem, _ := domain.NewSubscription("6", "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{}, 0)
 
 	subsRepo.Save(testItem)
 

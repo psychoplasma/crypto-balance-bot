@@ -5,23 +5,17 @@ package blockchaindotcom_test
 import (
 	"testing"
 
-	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/blockchaindotcom"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
 func TestGetAccountMovements(t *testing.T) {
 	blockNum := uint64(183579)
-	api := blockchaindotcom.NewBitcoinAPI(blockchaindotcom.BitcoinTranslator{})
+	api := blockchaindotcom.NewAPI(blockchaindotcom.BitcoinTranslator{})
 
 	mv, err := api.GetAccountMovements("1AJbsFZ64EpEfS5UAjAfcUG8pH8Jn3rn1F", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	event := domain.NewAccountAssetsMovedEvent("subs_id", services.BTC, mv.Sort())
-	t.Log(telegram.MovementFormatter(event))
 
 	changesExistForBlock := false
 	for blockHeight := range mv.Changes {
@@ -33,5 +27,17 @@ func TestGetAccountMovements(t *testing.T) {
 
 	if !changesExistForBlock {
 		t.Fatalf("expected to have changes in block#%d but got nothing", blockNum)
+	}
+}
+
+func TestGetLatestBlockHeight(t *testing.T) {
+	api := blockchaindotcom.NewAPI(blockchaindotcom.BitcoinTranslator{})
+	bh, err := api.GetLatestBlockHeight()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bh == 0 {
+		t.Fatal("expected anything but 0")
 	}
 }

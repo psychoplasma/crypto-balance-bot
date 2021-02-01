@@ -1,13 +1,11 @@
 package blockchaindotcom
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
-	"net/http"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/net"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain"
 )
 
@@ -42,14 +40,23 @@ type AddressInfo struct {
 	Txs     []Transaction `json:"txs"`
 }
 
-// BitcoinAPI implements CurrencyAPI for Bitcoin
-type BitcoinAPI struct {
+// Block is a data structure returning from Blockchain.com API
+type Block struct {
+	Hash      string   `json:"hash"`
+	Time      int64    `json:"time"`
+	Index     uint64   `json:"block_index"`
+	Height    uint64   `json:"height"`
+	TxIndexes []uint64 `json:"txIndexes"`
+}
+
+// API implements CurrencyAPI for Bitcoin
+type API struct {
 	t blockchain.Translator
 }
 
-// NewBitcoinAPI creates a new instance of BitcoinAPI
-func NewBitcoinAPI(t blockchain.Translator) *BitcoinAPI {
-	return &BitcoinAPI{
+// NewAPI creates a new instance of API
+func NewAPI(t blockchain.Translator) *API {
+	return &API{
 		t: t,
 	}
 }
@@ -59,7 +66,7 @@ func NewBitcoinAPI(t blockchain.Translator) *BitcoinAPI {
 // rather guarantees that txs at sinceBlockHeight will be included. There may be
 // past transactions as well. Therefore the changes should be applied in
 // an idempotent way in the domain.
-func (a *BitcoinAPI) GetAccountMovements(address string, sinceBlockHeight uint64) (*domain.AccountMovements, error) {
+func (a *API) GetAccountMovements(address string, sinceBlockHeight uint64) (*domain.AccountMovements, error) {
 	txs := []Transaction{}
 	ai, err := a.fetchAddressInfo(address, pageLimit, 0)
 	if err != nil {
@@ -83,24 +90,35 @@ func (a *BitcoinAPI) GetAccountMovements(address string, sinceBlockHeight uint64
 	return a.t.ToAccountMovements(address, txs)
 }
 
+// GetLatestBlockHeight fetches the latest block number
+func (a *API) GetLatestBlockHeight() (uint64, error) {
+	b, err := a.fetchLatestBlock()
+	if err != nil {
+		return 0, err
+	}
+
+	return b.Height, nil
+}
+
 // API call to https://blockchain.info/rawaddr/$bitcoin_address.
 // For further info: https://www.blockchain.com/api/blockchain_api
-func (a *BitcoinAPI) fetchAddressInfo(address string, pLimit int, pOffset int) (*AddressInfo, error) {
+func (a *API) fetchAddressInfo(address string, pLimit int, pOffset int) (*AddressInfo, error) {
 	url := fmt.Sprintf("https://blockchain.info/rawaddr/%s?n=%d&offset=%d", address, pLimit, pOffset)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode >= 400 {
-		return nil, errors.New(resp.Status)
-	}
-
 	ad := &AddressInfo{}
-	defer resp.Body.Close()
-	if err := json.NewDecoder(resp.Body).Decode(ad); err != nil {
+	if err := net.GetJSON(url, ad); err != nil {
 		return nil, err
 	}
 
 	return ad, nil
+}
+
+// API call to https://blockchain.info/latestblock
+// For further info: https://www.blockchain.com/api/blockchain_api
+func (a *API) fetchLatestBlock() (*Block, error) {
+	b := &Block{}
+	if err := net.GetJSON("https://blockchain.info/latestblock", b); err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }

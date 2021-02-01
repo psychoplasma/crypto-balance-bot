@@ -33,14 +33,22 @@ func (sa *SubscriptionApplication) SubscribeForValue(userID string, currencySymb
 
 	c, exist := services.CurrencyFactory[currencySymbol]
 	if !exist {
-		sa.r.Fail()
-		return errInexistentCurrency
+		return sa.returnError(errInexistentCurrency)
 	}
 
 	ac, exist := services.CurrencyFactory[againstCurrencySymbol]
 	if !exist {
-		sa.r.Fail()
-		return errInexistentCurrency
+		return sa.returnError(errInexistentCurrency)
+	}
+
+	cs, exist := services.CurrencyServiceFactory[currencySymbol]
+	if !exist {
+		return sa.returnError(errInexistentCurrency)
+	}
+
+	bh, err := cs.GetLatestBlockHeight()
+	if err != nil {
+		return sa.returnError(err)
 	}
 
 	s, err := domain.NewSubscription(
@@ -50,17 +58,16 @@ func (sa *SubscriptionApplication) SubscribeForValue(userID string, currencySymb
 		account,
 		c,
 		ac,
+		bh,
 	)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	s.Activate()
 
 	if err := sa.r.Save(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -80,6 +87,16 @@ func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencyS
 		return errInexistentCurrency
 	}
 
+	cs, exist := services.CurrencyServiceFactory[currencySymbol]
+	if !exist {
+		return sa.returnError(errInexistentCurrency)
+	}
+
+	bh, err := cs.GetLatestBlockHeight()
+	if err != nil {
+		return sa.returnError(err)
+	}
+
 	s, err := domain.NewSubscription(
 		sa.r.NextIdentity(userID),
 		userID,
@@ -87,17 +104,16 @@ func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencyS
 		account,
 		c,
 		domain.Currency{},
+		bh,
 	)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	s.Activate()
 
 	if err := sa.r.Save(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -113,13 +129,11 @@ func (sa *SubscriptionApplication) Unsubscribe(subscriptionID string) error {
 
 	s, err := sa.r.Get(subscriptionID)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	if err := sa.r.Remove(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -135,14 +149,12 @@ func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
 
 	subs, err := sa.r.GetAllForUser(userID)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	for _, s := range subs {
 		if err := sa.r.Remove(s); err != nil {
-			sa.r.Fail()
-			return err
+			return sa.returnError(err)
 		}
 	}
 
@@ -159,15 +171,13 @@ func (sa *SubscriptionApplication) ActivateSubscription(subscriptionID string) e
 
 	s, err := sa.r.Get(subscriptionID)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	s.Activate()
 
 	if err := sa.r.Save(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -183,15 +193,13 @@ func (sa *SubscriptionApplication) DeactivateSubscription(subscriptionID string)
 
 	s, err := sa.r.Get(subscriptionID)
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	s.Deactivate()
 
 	if err := sa.r.Save(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -207,8 +215,7 @@ func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscript
 
 	s, err := sa.r.Get(id)
 	if err != nil {
-		sa.r.Fail()
-		return nil, err
+		return nil, sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -224,8 +231,7 @@ func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*do
 
 	subs, err := sa.r.GetAllForUser(userID)
 	if err != nil {
-		sa.r.Fail()
-		return nil, err
+		return nil, sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -241,8 +247,7 @@ func (sa *SubscriptionApplication) GetAllActivatedMovements() ([]*domain.Subscri
 
 	subs, err := sa.r.GetAllActivatedMovements()
 	if err != nil {
-		sa.r.Fail()
-		return nil, err
+		return nil, sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -258,8 +263,7 @@ func (sa *SubscriptionApplication) CheckAndApplyAccountMovements(s *domain.Subsc
 	}
 
 	if err := sa.checkAndApplyAccountMovements(s); err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	sa.r.Success()
@@ -276,8 +280,7 @@ func (sa *SubscriptionApplication) CheckAndApplyAccountMovementsForAllActiveSubs
 
 	subs, err := sa.r.GetAllActivatedMovements()
 	if err != nil {
-		sa.r.Fail()
-		return err
+		return sa.returnError(err)
 	}
 
 	for _, s := range subs {
@@ -309,4 +312,9 @@ func (sa *SubscriptionApplication) checkAndApplyAccountMovements(s *domain.Subsc
 	s.ApplyMovements(acm.Sort())
 
 	return sa.r.Save(s)
+}
+
+func (sa *SubscriptionApplication) returnError(err error) error {
+	sa.r.Fail()
+	return err
 }

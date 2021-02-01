@@ -5,23 +5,17 @@ package etherscanio_test
 import (
 	"testing"
 
-	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/blockchain/etherscanio"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
 func TestGetAccountMovements(t *testing.T) {
 	blockNum := uint64(11000000)
-	api := etherscanio.NewEthereumAPI(etherscanio.EthereumTranslator{})
+	api := etherscanio.NewAPI(etherscanio.EthereumTranslator{})
 
 	mv, err := api.GetAccountMovements("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", blockNum)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	event := domain.NewAccountAssetsMovedEvent("subs_id", services.ETH, mv.Sort())
-	t.Log(telegram.MovementFormatter(event))
 
 	numOfChanges := 0
 	for blockHeight, chs := range mv.Changes {
@@ -34,5 +28,17 @@ func TestGetAccountMovements(t *testing.T) {
 
 	if numOfChanges == 0 {
 		t.Fatalf("expected to have changes since block#%d but got nothing", blockNum)
+	}
+}
+
+func TestGetLatestBlockHeight(t *testing.T) {
+	api := etherscanio.NewAPI(etherscanio.EthereumTranslator{})
+	bh, err := api.GetLatestBlockHeight()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bh == 0 {
+		t.Fatal("expected anything but 0")
 	}
 }

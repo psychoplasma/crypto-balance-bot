@@ -80,6 +80,7 @@ func NewSubscription(
 	account string,
 	c Currency,
 	against Currency,
+	startingBlockHeight uint64,
 ) (*Subscription, error) {
 	if id == "" {
 		return nil, ErrInvalidID
@@ -90,14 +91,15 @@ func NewSubscription(
 	}
 
 	s := &Subscription{
-		id:            id,
-		userID:        userID,
-		stype:         stype,
-		c:             c,
-		ac:            against,
-		account:       account,
-		totalReceived: new(big.Int),
-		totalSpent:    new(big.Int),
+		id:                  id,
+		userID:              userID,
+		stype:               stype,
+		c:                   c,
+		ac:                  against,
+		account:             account,
+		totalReceived:       new(big.Int),
+		totalSpent:          new(big.Int),
+		startingBlockHeight: startingBlockHeight,
 	}
 
 	return s, nil
@@ -117,14 +119,13 @@ func DeepCopySubscription(
 	blockHeight uint64,
 	staringBlockHeight uint64,
 ) (*Subscription, error) {
-	s, err := NewSubscription(id, userID, stype, account, c, against)
+	s, err := NewSubscription(id, userID, stype, account, c, against, staringBlockHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	s.activated = activated
 	s.blockHeight = blockHeight
-	s.startingBlockHeight = staringBlockHeight
 	s.totalReceived = totalReceived
 	s.totalSpent = totalSpent
 
@@ -198,13 +199,14 @@ func (s *Subscription) ToString() string {
 	}
 
 	return fmt.Sprintf(
-		"ID: %s\nType: %s\nAsset: %s\nStatus: %s\nTotalReceived: %s\nTotalSpent: %s\nLast Updated Block Height: %d",
+		"ID: %s\nType: %s\nAsset: %s\nStatus: %s\nTotalReceived: %s\nTotalSpent: %s\nStarting Block Height: %d\nLast Updated Block Height: %d",
 		s.ID(),
 		s.Account(),
 		s.Currency().Symbol,
 		status,
 		s.TotalReceived().String(),
 		s.TotalSpent().String(),
+		s.StartingBlockHeight(),
 		s.BlockHeight(),
 	)
 }
@@ -232,6 +234,8 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 				break
 			case SpentBalance:
 				s.spendBalance(c.Amount)
+				break
+			default:
 			}
 		}
 

@@ -68,26 +68,23 @@ type MovementObserver struct {
 // NewMovementObserver creates a new instance of MovementObserver
 func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, opts ...*ObserverOptions) *MovementObserver {
 	o := &MovementObserver{
-		sa: sa,
-		p:  p,
+		sa:              sa,
+		p:               p,
+		observeInterval: observeInterval,
+		exitTimeout:     exitTimeout,
+		maxParallelism:  maxParallelism,
 	}
 
-	if opts[0] == nil || opts[0].ObserveInterval == 0 {
-		o.observeInterval = observeInterval
-	} else {
-		o.observeInterval = opts[0].ObserveInterval
-	}
-
-	if opts[0] == nil || opts[0].ExitTimeout == 0 {
-		o.exitTimeout = exitTimeout
-	} else {
-		o.exitTimeout = opts[0].ExitTimeout
-	}
-
-	if opts[0] == nil || opts[0].MaxParallelism == 0 {
-		o.maxParallelism = maxParallelism
-	} else {
-		o.maxParallelism = opts[0].MaxParallelism
+	for _, opt := range opts {
+		if opt.ObserveInterval != 0 {
+			o.observeInterval = opt.ObserveInterval
+		}
+		if opt.ExitTimeout != 0 {
+			o.exitTimeout = opt.ExitTimeout
+		}
+		if opt.MaxParallelism != 0 {
+			o.maxParallelism = opt.MaxParallelism
+		}
 	}
 
 	o.w = concurrency.NewWorker(o.maxParallelism, o.exitTimeout)
