@@ -99,6 +99,7 @@ func NewSubscription(
 		account:             account,
 		totalReceived:       new(big.Int),
 		totalSpent:          new(big.Int),
+		blockHeight:         startingBlockHeight,
 		startingBlockHeight: startingBlockHeight,
 	}
 
