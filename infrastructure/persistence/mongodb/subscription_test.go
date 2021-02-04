@@ -98,7 +98,29 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllAcivatedMovements(t *testing.T) {
+func TestSubscriptionRepository_GetAllMovements(t *testing.T) {
+	cleanUp := helperCreateAndPopulateDB(t)
+	defer cleanUp()
+
+	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 3
+
+	if err := r.Begin(); err != nil {
+		t.Fatal(err)
+	}
+	subs, _ := r.GetAllMovements()
+	r.Success()
+
+	if len(subs) != expectedCount {
+		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
+	}
+}
+
+func TestSubscriptionRepository_GetAllValues(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
@@ -112,29 +134,7 @@ func TestSubscriptionRepository_GetAllAcivatedMovements(t *testing.T) {
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
 	}
-	subs, _ := r.GetAllActivatedMovements()
-	r.Success()
-
-	if len(subs) != expectedCount {
-		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
-	}
-}
-
-func TestSubscriptionRepository_GetAllAcivatedValues(t *testing.T) {
-	cleanUp := helperCreateAndPopulateDB(t)
-	defer cleanUp()
-
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expectedCount := 1
-
-	if err := r.Begin(); err != nil {
-		t.Fatal(err)
-	}
-	subs, _ := r.GetAllActivatedValues()
+	subs, _ := r.GetAllValues()
 	r.Success()
 
 	if len(subs) != expectedCount {

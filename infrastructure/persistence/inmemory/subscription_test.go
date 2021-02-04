@@ -13,12 +13,9 @@ var testSubs = []*domain.Subscription{}
 
 func populateSubsData() {
 	s1, _ := domain.NewSubscription("1", "user1", domain.MovementSubscription, "account-1", domain.Currency{}, domain.Currency{}, 0)
-	s1.Activate()
 	s2, _ := domain.NewSubscription("2", "user1", domain.MovementSubscription, "account-2", domain.Currency{}, domain.Currency{}, 0)
 	s3, _ := domain.NewSubscription("3", "user2", domain.MovementSubscription, "account-3", domain.Currency{}, domain.Currency{}, 0)
-	s3.Activate()
 	s4, _ := domain.NewSubscription("4", "user2", domain.ValueSubscription, "account-4", domain.Currency{}, domain.Currency{}, 0)
-	s4.Activate()
 	s5, _ := domain.NewSubscription("5", "user3", domain.ValueSubscription, "account-5", domain.Currency{}, domain.Currency{}, 0)
 
 	testSubs = append(testSubs, s1, s2, s3, s4, s5)
@@ -68,18 +65,18 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllAcivatedMovements(t *testing.T) {
-	expectedCount := 2
-	subs, _ := subsRepo.GetAllActivatedMovements()
+func TestSubscriptionRepository_GetAllMovements(t *testing.T) {
+	expectedCount := 3
+	subs, _ := subsRepo.GetAllMovements()
 
 	if len(subs) != expectedCount {
 		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
 	}
 }
 
-func TestSubscriptionRepository_GetAllAcivatedValues(t *testing.T) {
-	expectedCount := 1
-	subs, _ := subsRepo.GetAllActivatedValues()
+func TestSubscriptionRepository_GetAllValues(t *testing.T) {
+	expectedCount := 2
+	subs, _ := subsRepo.GetAllValues()
 
 	if len(subs) != expectedCount {
 		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))

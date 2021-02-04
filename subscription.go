@@ -34,10 +34,10 @@ type SubscriptionRepository interface {
 	Get(id string) (*Subscription, error)
 	// GetAllForUser returns all subscriptions for the given user id
 	GetAllForUser(userID string) ([]*Subscription, error)
-	// GetAllActivatedMovements returns all activated movement subscriptions
-	GetAllActivatedMovements() ([]*Subscription, error)
-	// GetAllActivatedValues returns all activated value subscriptions
-	GetAllActivatedValues() ([]*Subscription, error)
+	// GetAllMovements returns all movement subscriptions
+	GetAllMovements() ([]*Subscription, error)
+	// GetAllValues returns all value subscriptions
+	GetAllValues() ([]*Subscription, error)
 	// Save persists/updates the given subscription
 	Save(s *Subscription) error
 	// Remove removes the given subscription from the persistance
@@ -49,7 +49,6 @@ type Subscription struct {
 	id                  string
 	userID              string
 	stype               SubscriptionType
-	activated           bool
 	blockHeight         uint64
 	startingBlockHeight uint64
 	c                   Currency
@@ -111,7 +110,6 @@ func DeepCopySubscription(
 	id string,
 	userID string,
 	stype SubscriptionType,
-	activated bool,
 	account string,
 	c Currency,
 	against Currency,
@@ -125,7 +123,6 @@ func DeepCopySubscription(
 		return nil, err
 	}
 
-	s.activated = activated
 	s.blockHeight = blockHeight
 	s.totalReceived = totalReceived
 	s.totalSpent = totalSpent
@@ -175,11 +172,6 @@ func (s *Subscription) ID() string {
 	return s.id
 }
 
-// IsActivated returns activated property
-func (s *Subscription) IsActivated() bool {
-	return s.activated
-}
-
 // UserID returns userID property
 func (s *Subscription) UserID() string {
 	return s.userID
@@ -192,19 +184,11 @@ func (s *Subscription) Type() SubscriptionType {
 
 // ToString returns a string representation for this subscription
 func (s *Subscription) ToString() string {
-	status := ""
-	if s.IsActivated() {
-		status = "Active"
-	} else {
-		status = "Deactive"
-	}
-
 	return fmt.Sprintf(
-		"ID: %s\nType: %s\nAsset: %s\nStatus: %s\nTotalReceived: %s\nTotalSpent: %s\nStarting Block Height: %d\nLast Updated Block Height: %d",
+		"ID: %s\nType: %s\nAsset: %s\nTotalReceived: %s\nTotalSpent: %s\nStarting Block Height: %d\nLast Updated Block Height: %d",
 		s.ID(),
 		s.Account(),
 		s.Currency().Symbol,
-		status,
 		s.TotalReceived().String(),
 		s.TotalSpent().String(),
 		s.StartingBlockHeight(),
@@ -245,22 +229,6 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 
 	DomainEventPublisherInstance().Publish(
 		NewAccountAssetsMovedEvent(s.ID(), s.Currency(), acms))
-}
-
-// Activate activates the subscription. User will start getting notifications about this subscription
-func (s *Subscription) Activate() {
-	if s.activated {
-		return
-	}
-	s.activated = true
-}
-
-// Deactivate deactivates the subscription. User will stop getting notifications about this subscription
-func (s *Subscription) Deactivate() {
-	if !s.activated {
-		return
-	}
-	s.activated = false
 }
 
 func (s *Subscription) receiveBalance(b *big.Int) {

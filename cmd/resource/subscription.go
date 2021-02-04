@@ -15,7 +15,6 @@ type Subscription struct {
 	ID                  string `json:"id"`
 	UserID              string `json:"user_id"`
 	Type                string `json:"type"`
-	Activated           bool   `json:"is_activated"`
 	Currency            string `json:"currency"`
 	AgainstCurrency     string `json:"against_currency,omitempty"`
 	Account             string `json:"account"`
@@ -34,7 +33,6 @@ func fromDomain(s *domain.Subscription) *Subscription {
 		ID:                  s.ID(),
 		UserID:              s.UserID(),
 		Type:                string(s.Type()),
-		Activated:           s.IsActivated(),
 		Currency:            s.Currency().Symbol,
 		AgainstCurrency:     s.AgainstCurrency().Symbol,
 		Account:             s.Account(),

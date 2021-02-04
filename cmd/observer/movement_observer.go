@@ -45,7 +45,7 @@ func (s *AccountAssetMovedEventSubscriber) SubscribedToEventType() reflect.Type 
 
 const observeInterval = time.Second * 10
 const exitTimeout = time.Second * 30
-const maxParallelism = 100
+const maxParallelism = 1000
 
 // ObserverOptions represents configurables for MovementObserver
 type ObserverOptions struct {
@@ -117,7 +117,7 @@ func (o *MovementObserver) observe() error {
 		Subscribe(NewAccountAssetMovedEventSubscriber(o.p))
 	defer domain.DomainEventPublisherInstance().Reset()
 
-	subs, err := o.sa.GetAllActivatedMovements()
+	subs, err := o.sa.GetAllMovements()
 	if err != nil {
 		return err
 	}

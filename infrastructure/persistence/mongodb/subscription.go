@@ -129,10 +129,10 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
-// GetAllActivatedMovements returns all activated movement subscriptions
-func (r *SubscriptionRepository) GetAllActivatedMovements() ([]*domain.Subscription, error) {
+// GetAllMovements returns all activated movement subscriptions
+func (r *SubscriptionRepository) GetAllMovements() ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByTypeAndActivation(domain.MovementSubscription, true)
+		return r.getByType(domain.MovementSubscription)
 	})
 	if err != nil {
 		return nil, err
@@ -141,10 +141,10 @@ func (r *SubscriptionRepository) GetAllActivatedMovements() ([]*domain.Subscript
 	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
-// GetAllActivatedValues returns all activated value subscriptions
-func (r *SubscriptionRepository) GetAllActivatedValues() ([]*domain.Subscription, error) {
+// GetAllValues returns all activated value subscriptions
+func (r *SubscriptionRepository) GetAllValues() ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByTypeAndActivation(domain.ValueSubscription, true)
+		return r.getByType(domain.ValueSubscription)
 	})
 	if err != nil {
 		return nil, err
@@ -244,9 +244,9 @@ func (r *SubscriptionRepository) getByUserID(userID string) ([]*Subscription, er
 	return subs, nil
 }
 
-func (r *SubscriptionRepository) getByTypeAndActivation(stype domain.SubscriptionType, activated bool) ([]*Subscription, error) {
+func (r *SubscriptionRepository) getByType(stype domain.SubscriptionType) ([]*Subscription, error) {
 	ctx := context.Background()
-	query := bson.M{"type": stype, "activated": activated}
+	query := bson.M{"type": stype}
 
 	cursor, err := r.subs.Find(ctx, query)
 	if err != nil {
@@ -298,7 +298,6 @@ type Subscription struct {
 	ID                  string `bson:"_id" json:"_id"`
 	UserID              string `bson:"user_id" json:"user_id"`
 	Type                string `bson:"type" json:"type"`
-	Activated           bool   `bson:"activated" json:"activated"`
 	Currency            string `bson:"currency" json:"currency"`
 	AgainstCurrency     string `bson:"against_currency" json:"against_currency"`
 	Account             string `bson:"account" json:"account"`
@@ -318,7 +317,6 @@ func FromDomain(s *domain.Subscription) *Subscription {
 		ID:                  s.ID(),
 		UserID:              s.UserID(),
 		Type:                string(s.Type()),
-		Activated:           s.IsActivated(),
 		Currency:            s.Currency().Symbol,
 		AgainstCurrency:     s.AgainstCurrency().Symbol,
 		Account:             s.Account(),
@@ -349,7 +347,6 @@ func ToDomain(s *Subscription) *domain.Subscription {
 		s.ID,
 		s.UserID,
 		domain.SubscriptionType(s.Type),
-		s.Activated,
 		s.Account,
 		services.CurrencyFactory[s.Currency],
 		services.CurrencyFactory[s.AgainstCurrency],

@@ -3,7 +3,6 @@ package application
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
@@ -64,8 +63,6 @@ func (sa *SubscriptionApplication) SubscribeForValue(userID string, currencySymb
 		return sa.returnError(err)
 	}
 
-	s.Activate()
-
 	if err := sa.r.Save(s); err != nil {
 		return sa.returnError(err)
 	}
@@ -109,8 +106,6 @@ func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencyS
 	if err != nil {
 		return sa.returnError(err)
 	}
-
-	s.Activate()
 
 	if err := sa.r.Save(s); err != nil {
 		return sa.returnError(err)
@@ -163,50 +158,6 @@ func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
 	return nil
 }
 
-// ActivateSubscription activates the given subscription
-func (sa *SubscriptionApplication) ActivateSubscription(subscriptionID string) error {
-	if err := sa.r.Begin(); err != nil {
-		return err
-	}
-
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	s.Activate()
-
-	if err := sa.r.Save(s); err != nil {
-		return sa.returnError(err)
-	}
-
-	sa.r.Success()
-
-	return nil
-}
-
-// DeactivateSubscription deactivates the given subscription
-func (sa *SubscriptionApplication) DeactivateSubscription(subscriptionID string) error {
-	if err := sa.r.Begin(); err != nil {
-		return err
-	}
-
-	s, err := sa.r.Get(subscriptionID)
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	s.Deactivate()
-
-	if err := sa.r.Save(s); err != nil {
-		return sa.returnError(err)
-	}
-
-	sa.r.Success()
-
-	return nil
-}
-
 // GetSubscription returns the details of the given subscription
 func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {
@@ -239,13 +190,13 @@ func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*do
 	return subs, nil
 }
 
-// GetAllActivatedMovements returns all activated movement subscriptions
-func (sa *SubscriptionApplication) GetAllActivatedMovements() ([]*domain.Subscription, error) {
+// GetAllMovements returns all activated movement subscriptions
+func (sa *SubscriptionApplication) GetAllMovements() ([]*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {
 		return nil, err
 	}
 
-	subs, err := sa.r.GetAllActivatedMovements()
+	subs, err := sa.r.GetAllMovements()
 	if err != nil {
 		return nil, sa.returnError(err)
 	}
@@ -264,29 +215,6 @@ func (sa *SubscriptionApplication) CheckAndApplyAccountMovements(s *domain.Subsc
 
 	if err := sa.checkAndApplyAccountMovements(s); err != nil {
 		return sa.returnError(err)
-	}
-
-	sa.r.Success()
-
-	return nil
-}
-
-// CheckAndApplyAccountMovementsForAllActiveSubscriptions checks and applies
-// account movements for all active movement subscriptions
-func (sa *SubscriptionApplication) CheckAndApplyAccountMovementsForAllActiveSubscriptions() error {
-	if err := sa.r.Begin(); err != nil {
-		return err
-	}
-
-	subs, err := sa.r.GetAllActivatedMovements()
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	for _, s := range subs {
-		if err := sa.checkAndApplyAccountMovements(s); err != nil {
-			log.Printf("error while checking account movements for %s : %s", s.Account(), err.Error())
-		}
 	}
 
 	sa.r.Success()
