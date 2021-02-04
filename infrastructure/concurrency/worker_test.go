@@ -11,30 +11,30 @@ import (
 
 func TestJob_RunAndWait(t *testing.T) {
 	err_msg := "test_panic"
-	j1, err := concurrency.NewJob()
+	j1, err := concurrency.NewJob(func() {
+		time.Sleep(time.Millisecond * 100)
+		panic(err_msg)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// failing job
-	go j1.Run(func() {
-		time.Sleep(time.Millisecond * 100)
-		panic(err_msg)
-	})
+	go j1.Run()
 
 	if err := j1.Wait(func() {}); err == nil || err.Error() != err_msg {
 		t.Fatalf("\ngot:%s\nwant:%s", err, err_msg)
 	}
 
-	j2, err := concurrency.NewJob()
+	j2, err := concurrency.NewJob(func() {
+		time.Sleep(time.Millisecond * 100)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// succeeding job
-	go j2.Run(func() {
-		time.Sleep(time.Millisecond * 100)
-	})
+	go j2.Run()
 
 	if err := j2.Wait(func() {}); err != nil {
 		t.Fatal(err)
@@ -57,7 +57,7 @@ func TestWorker_Run(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !w.IsJobAlive(j1) {
+	if !w.IsJobAlive(j1.ID) {
 		t.Fatalf("job is supposed to be alive")
 	}
 
@@ -69,7 +69,7 @@ func TestWorker_Run(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !w.IsJobAlive(j2) {
+	if !w.IsJobAlive(j2.ID) {
 		t.Fatalf("job is supposed to be alive")
 	}
 
@@ -82,14 +82,14 @@ func TestWorker_Run(t *testing.T) {
 		t.Fatalf("\ngot:%s\nwant:%s", j2.Error, err_msg)
 	}
 
-	if w.IsJobAlive(j1) || w.IsJobAlive(j2) {
+	if w.IsJobAlive(j1.ID) || w.IsJobAlive(j2.ID) {
 		t.Fatalf("all jobs are supposed to be done")
 	}
 }
 
 func TestWorker_Run_WithMoreThanParalellismLimit(t *testing.T) {
 	parallelismLimit := 2
-	expected_err := fmt.Sprintf("parallel execution limit(%d) has already been reached", parallelismLimit)
+	expected_err := fmt.Sprintf("parallel execution limit(%d) has been reached", parallelismLimit)
 
 	w := concurrency.NewWorker(
 		parallelismLimit,

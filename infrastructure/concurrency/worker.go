@@ -14,10 +14,11 @@ import (
 
 // Job represents a handle to a function to be executed in parallel with some others in a Worker instance
 type Job struct {
-	id    string
+	ID    string
 	done  chan struct{}
 	s     chan os.Signal // Channel to capture system interrupt signal
 	Error error
+	f     func()
 }
 
 func generateJid() (string, error) {
@@ -31,15 +32,16 @@ func generateJid() (string, error) {
 }
 
 // NewJob creates a new instance of Job
-func NewJob() (*Job, error) {
+func NewJob(f func()) (*Job, error) {
 	jid, err := generateJid()
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate job id")
 	}
 
 	j := &Job{
-		id:   jid,
+		ID:   jid,
 		done: make(chan struct{}),
+		f:    f,
 		s:    make(chan os.Signal),
 	}
 
@@ -48,8 +50,8 @@ func NewJob() (*Job, error) {
 	return j, nil
 }
 
-// Run runs the given function
-func (j *Job) Run(f func()) {
+// Run runs the job's function
+func (j *Job) Run() {
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(error); !ok {
@@ -60,16 +62,15 @@ func (j *Job) Run(f func()) {
 		}
 
 		j.done <- struct{}{}
+		close(j.done)
 	}()
 
-	f()
+	j.f()
 }
 
 // Wait waits for the corresponding job to be completed and returns any error if there is
 func (j *Job) Wait(finalizer func()) error {
 	defer finalizer()
-	// defer close(j.done)
-	// defer close(j.s)
 
 	select {
 	case <-j.done:
@@ -104,7 +105,7 @@ func NewWorker(maxParallelism int, exitTimeout time.Duration) *Worker {
 	return w
 }
 
-func (w *Worker) add() (*Job, error) {
+func (w *Worker) addJob(f func()) (*Job, error) {
 	if w.isStopped {
 		return nil, fmt.Errorf("cannot add a new job. worker is exiting")
 	}
@@ -112,23 +113,23 @@ func (w *Worker) add() (*Job, error) {
 	w.m.Lock()
 	defer w.m.Unlock()
 	if len(w.jobs) >= w.maxParallelism {
-		return nil, fmt.Errorf("parallel execution limit(%d) has already been reached", w.maxParallelism)
+		return nil, fmt.Errorf("parallel execution limit(%d) has been reached", w.maxParallelism)
 	}
 
-	j, err := NewJob()
+	j, err := NewJob(f)
 	if err != nil {
 		return nil, err
 	}
 
-	w.jobs[j.id] = j
+	w.jobs[j.ID] = j
 
 	return j, nil
 }
 
-func (w *Worker) remove(j *Job) {
+func (w *Worker) removeJob(j *Job) {
 	w.m.Lock()
-	delete(w.jobs, j.id)
-	w.m.Unlock()
+	defer w.m.Unlock()
+	delete(w.jobs, j.ID)
 }
 
 func (w *Worker) await(timeout time.Duration) error {
@@ -146,13 +147,13 @@ func (w *Worker) await(timeout time.Duration) error {
 
 // Run runs a job in parallel with other jobs in this worker instance
 func (w *Worker) Run(f func()) (*Job, error) {
-	j, err := w.add()
+	j, err := w.addJob(f)
 	if err != nil {
 		return nil, err
 	}
 
-	go j.Run(f)
-	go j.Wait(func() { w.remove(j) })
+	go j.Run()
+	go j.Wait(func() { w.removeJob(j) })
 
 	return j, nil
 }
@@ -174,7 +175,7 @@ func (w *Worker) JobsInProgress() int {
 }
 
 // IsJobAlive returns  whether the given job is alive(runnig) or not
-func (w *Worker) IsJobAlive(j *Job) bool {
-	_, ok := w.jobs[j.id]
+func (w *Worker) IsJobAlive(jid string) bool {
+	_, ok := w.jobs[jid]
 	return ok
 }
