@@ -98,7 +98,7 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllMovements(t *testing.T) {
+func TestSubscriptionRepository_GetAllForType(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
@@ -112,7 +112,19 @@ func TestSubscriptionRepository_GetAllMovements(t *testing.T) {
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
 	}
-	subs, _ := r.GetAllMovements()
+	subs, _ := r.GetAllForType(domain.MovementSubscription)
+	r.Success()
+
+	if len(subs) != expectedCount {
+		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
+	}
+
+	expectedCount = 2
+
+	if err := r.Begin(); err != nil {
+		t.Fatal(err)
+	}
+	subs, _ = r.GetAllForType(domain.ValueSubscription)
 	r.Success()
 
 	if len(subs) != expectedCount {
@@ -120,7 +132,7 @@ func TestSubscriptionRepository_GetAllMovements(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllValues(t *testing.T) {
+func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
@@ -129,12 +141,24 @@ func TestSubscriptionRepository_GetAllValues(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCount := 2
+	expectedCount := 3
 
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
 	}
-	subs, _ := r.GetAllValues()
+	subs, _ := r.GetAllForCurrency("eth")
+	r.Success()
+
+	if len(subs) != expectedCount {
+		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
+	}
+
+	expectedCount = 2
+
+	if err := r.Begin(); err != nil {
+		t.Fatal(err)
+	}
+	subs, _ = r.GetAllForCurrency("btc")
 	r.Success()
 
 	if len(subs) != expectedCount {

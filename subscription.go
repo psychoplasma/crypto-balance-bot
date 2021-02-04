@@ -34,10 +34,10 @@ type SubscriptionRepository interface {
 	Get(id string) (*Subscription, error)
 	// GetAllForUser returns all subscriptions for the given user id
 	GetAllForUser(userID string) ([]*Subscription, error)
-	// GetAllMovements returns all movement subscriptions
-	GetAllMovements() ([]*Subscription, error)
-	// GetAllValues returns all value subscriptions
-	GetAllValues() ([]*Subscription, error)
+	// GetAllForType returns all subscriptions for the given type: `value` or `movement`
+	GetAllForType(t SubscriptionType) ([]*Subscription, error)
+	// GetAllForCurrency returns all subscriptions for the given currency
+	GetAllForCurrency(currencySymbol string) ([]*Subscription, error)
 	// Save persists/updates the given subscription
 	Save(s *Subscription) error
 	// Remove removes the given subscription from the persistance

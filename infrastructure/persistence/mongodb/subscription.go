@@ -129,10 +129,10 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
-// GetAllMovements returns all activated movement subscriptions
-func (r *SubscriptionRepository) GetAllMovements() ([]*domain.Subscription, error) {
+// GetAllForType returns all subscriptions for the given type: `value` or `movement`
+func (r *SubscriptionRepository) GetAllForType(stype domain.SubscriptionType) ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByType(domain.MovementSubscription)
+		return r.getByType(stype)
 	})
 	if err != nil {
 		return nil, err
@@ -141,10 +141,10 @@ func (r *SubscriptionRepository) GetAllMovements() ([]*domain.Subscription, erro
 	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
-// GetAllValues returns all activated value subscriptions
-func (r *SubscriptionRepository) GetAllValues() ([]*domain.Subscription, error) {
+// GetAllForCurrency returns all subscriptions for the given currency
+func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByType(domain.ValueSubscription)
+		return r.getByCurrency(currencySymbol)
 	})
 	if err != nil {
 		return nil, err
@@ -247,6 +247,24 @@ func (r *SubscriptionRepository) getByUserID(userID string) ([]*Subscription, er
 func (r *SubscriptionRepository) getByType(stype domain.SubscriptionType) ([]*Subscription, error) {
 	ctx := context.Background()
 	query := bson.M{"type": stype}
+
+	cursor, err := r.subs.Find(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	subs := make([]*Subscription, 0)
+	if err = cursor.All(ctx, &subs); err != nil {
+		return nil, err
+	}
+
+	return subs, nil
+}
+
+func (r *SubscriptionRepository) getByCurrency(symbol string) ([]*Subscription, error) {
+	ctx := context.Background()
+	query := bson.M{"currency": symbol}
 
 	cursor, err := r.subs.Find(ctx, query)
 	if err != nil {

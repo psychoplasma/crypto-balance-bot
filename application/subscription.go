@@ -190,13 +190,13 @@ func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*do
 	return subs, nil
 }
 
-// GetAllMovements returns all activated movement subscriptions
-func (sa *SubscriptionApplication) GetAllMovements() ([]*domain.Subscription, error) {
+// GetAllForCurrency returns all subscriptions for a given currency
+func (sa *SubscriptionApplication) GetAllForCurrency(symbol string) ([]*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {
 		return nil, err
 	}
 
-	subs, err := sa.r.GetAllMovements()
+	subs, err := sa.r.GetAllForCurrency(symbol)
 	if err != nil {
 		return nil, sa.returnError(err)
 	}

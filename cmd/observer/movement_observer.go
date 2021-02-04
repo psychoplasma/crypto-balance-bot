@@ -63,11 +63,13 @@ type MovementObserver struct {
 	observeInterval time.Duration
 	maxParallelism  int
 	exitTimeout     time.Duration
+	currency        string
 }
 
 // NewMovementObserver creates a new instance of MovementObserver
-func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, opts ...*ObserverOptions) *MovementObserver {
+func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, currency string, opts ...*ObserverOptions) *MovementObserver {
 	o := &MovementObserver{
+		currency:        currency,
 		sa:              sa,
 		p:               p,
 		observeInterval: observeInterval,
@@ -117,7 +119,7 @@ func (o *MovementObserver) observe() error {
 		Subscribe(NewAccountAssetMovedEventSubscriber(o.p))
 	defer domain.DomainEventPublisherInstance().Reset()
 
-	subs, err := o.sa.GetAllMovements()
+	subs, err := o.sa.GetAllForCurrency(o.currency)
 	if err != nil {
 		return err
 	}

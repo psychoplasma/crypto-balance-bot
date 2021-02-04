@@ -19,6 +19,7 @@ import (
 type Config struct {
 	Token       string        `yaml:"token"`
 	PollingTime time.Duration `yaml:"polling-time"`
+	Currency    string        `yaml:"currency"`
 	Database    struct {
 		Name string `yaml:"name"`
 		URI  string `yaml:"uri"`
@@ -56,6 +57,7 @@ func main() {
 	o := NewMovementObserver(
 		application.NewSubscriptionApplication(subsRepo),
 		telegram.NewPublisher(c.Token, telegram.MovementFormatter),
+		c.Currency,
 	)
 
 	sig := make(chan os.Signal)

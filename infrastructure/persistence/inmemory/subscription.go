@@ -64,20 +64,32 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 	return subs, nil
 }
 
-// GetAllMovements returns all movement subscriptions
-func (r *SubscriptionRepository) GetAllMovements() ([]*domain.Subscription, error) {
+// GetAllForType returns all subscriptions for the given type
+func (r *SubscriptionRepository) GetAllForType(t domain.SubscriptionType) ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for k := range r.subsMovements {
-		subs = append(subs, r.subsMovements[k])
+	switch t {
+	case domain.MovementSubscription:
+		for k := range r.subsMovements {
+			subs = append(subs, r.subsMovements[k])
+		}
+		break
+	case domain.ValueSubscription:
+		for k := range r.subsValues {
+			subs = append(subs, r.subsValues[k])
+		}
+		break
 	}
+
 	return subs, nil
 }
 
-// GetAllValues returns all value subscriptions
-func (r *SubscriptionRepository) GetAllValues() ([]*domain.Subscription, error) {
+// GetAllForCurrency returns all subscriptions for the given currency
+func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
-	for k := range r.subsValues {
-		subs = append(subs, r.subsValues[k])
+	for _, s := range r.subsByID {
+		if s.Currency().Symbol == currencySymbol {
+			subs = append(subs, s)
+		}
 	}
 	return subs, nil
 }
