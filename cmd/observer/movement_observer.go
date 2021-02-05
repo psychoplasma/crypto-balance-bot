@@ -119,7 +119,7 @@ func (o *MovementObserver) observe() error {
 		Subscribe(NewAccountAssetMovedEventSubscriber(o.p))
 	defer domain.DomainEventPublisherInstance().Reset()
 
-	subs, err := o.sa.GetAllForCurrency(o.currency)
+	subs, err := o.sa.GetSubscriptionsForCurrency(o.currency)
 	if err != nil {
 		return err
 	}

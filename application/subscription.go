@@ -24,56 +24,8 @@ func NewSubscriptionApplication(repo domain.SubscriptionRepository) *Subscriptio
 	}
 }
 
-// SubscribeForValue creates a new value-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForValue(userID string, currencySymbol string, againstCurrencySymbol string, account string) error {
-	if err := sa.r.Begin(); err != nil {
-		return err
-	}
-
-	c, exist := services.CurrencyFactory[currencySymbol]
-	if !exist {
-		return sa.returnError(errInexistentCurrency)
-	}
-
-	ac, exist := services.CurrencyFactory[againstCurrencySymbol]
-	if !exist {
-		return sa.returnError(errInexistentCurrency)
-	}
-
-	cs, exist := services.CurrencyServiceFactory[currencySymbol]
-	if !exist {
-		return sa.returnError(errInexistentCurrency)
-	}
-
-	bh, err := cs.GetLatestBlockHeight()
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	s, err := domain.NewSubscription(
-		sa.r.NextIdentity(userID),
-		userID,
-		domain.ValueSubscription,
-		account,
-		c,
-		ac,
-		bh,
-	)
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	if err := sa.r.Save(s); err != nil {
-		return sa.returnError(err)
-	}
-
-	sa.r.Success()
-
-	return nil
-}
-
-// SubscribeForMovement creates a new movement-based subscription and activates it
-func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencySymbol string, account string) error {
+// Subscribe creates a new subscription
+func (sa *SubscriptionApplication) Subscribe(userID string, currencySymbol string, account string) error {
 	if err := sa.r.Begin(); err != nil {
 		return err
 	}
@@ -97,10 +49,8 @@ func (sa *SubscriptionApplication) SubscribeForMovement(userID string, currencyS
 	s, err := domain.NewSubscription(
 		sa.r.NextIdentity(userID),
 		userID,
-		domain.MovementSubscription,
 		account,
 		c,
-		domain.Currency{},
 		bh,
 	)
 	if err != nil {
@@ -190,8 +140,8 @@ func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*do
 	return subs, nil
 }
 
-// GetAllForCurrency returns all subscriptions for a given currency
-func (sa *SubscriptionApplication) GetAllForCurrency(symbol string) ([]*domain.Subscription, error) {
+// GetSubscriptionsForCurrency returns all subscriptions for a given currency
+func (sa *SubscriptionApplication) GetSubscriptionsForCurrency(symbol string) ([]*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {
 		return nil, err
 	}

@@ -11,21 +11,17 @@ var errIndifferentUserID = errors.New("updating UserID field of an existing subs
 
 // SubscriptionRepository is an in-memory implementation of SubscriptionRepository
 type SubscriptionRepository struct {
-	subsByUserID  map[string]map[string]*domain.Subscription
-	subsByID      map[string]*domain.Subscription
-	subsMovements map[string]*domain.Subscription
-	subsValues    map[string]*domain.Subscription
-	size          int
+	subsByUserID map[string]map[string]*domain.Subscription
+	subsByID     map[string]*domain.Subscription
+	size         int
 }
 
 // NewSubscriptionRepository creates a new instance of SubscriptionRepository
 func NewSubscriptionRepository() *SubscriptionRepository {
 	return &SubscriptionRepository{
-		subsByUserID:  make(map[string]map[string]*domain.Subscription),
-		subsByID:      make(map[string]*domain.Subscription),
-		subsMovements: make(map[string]*domain.Subscription),
-		subsValues:    make(map[string]*domain.Subscription),
-		size:          0,
+		subsByUserID: make(map[string]map[string]*domain.Subscription),
+		subsByID:     make(map[string]*domain.Subscription),
+		size:         0,
 	}
 }
 
@@ -64,25 +60,6 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 	return subs, nil
 }
 
-// GetAllForType returns all subscriptions for the given type
-func (r *SubscriptionRepository) GetAllForType(t domain.SubscriptionType) ([]*domain.Subscription, error) {
-	subs := make([]*domain.Subscription, 0)
-	switch t {
-	case domain.MovementSubscription:
-		for k := range r.subsMovements {
-			subs = append(subs, r.subsMovements[k])
-		}
-		break
-	case domain.ValueSubscription:
-		for k := range r.subsValues {
-			subs = append(subs, r.subsValues[k])
-		}
-		break
-	}
-
-	return subs, nil
-}
-
 // GetAllForCurrency returns all subscriptions for the given currency
 func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
@@ -114,14 +91,6 @@ func (r *SubscriptionRepository) Save(s *domain.Subscription) error {
 	}
 	r.subsByUserID[s.UserID()][s.ID()] = s
 
-	if s.Type() == domain.MovementSubscription {
-		r.subsMovements[s.ID()] = s
-	}
-
-	if s.Type() == domain.ValueSubscription {
-		r.subsValues[s.ID()] = s
-	}
-
 	return nil
 }
 
@@ -134,8 +103,6 @@ func (r *SubscriptionRepository) Remove(s *domain.Subscription) error {
 
 	delete(r.subsByID, s.ID())
 	delete(r.subsByUserID[s.UserID()], s.ID())
-	delete(r.subsMovements, s.ID())
-	delete(r.subsValues, s.ID())
 
 	return nil
 }

@@ -12,11 +12,11 @@ var subsRepo = inmemory.NewSubscriptionRepository()
 var testSubs = []*domain.Subscription{}
 
 func populateSubsData() {
-	s1, _ := domain.NewSubscription("1", "user1", domain.MovementSubscription, "account-1", domain.Currency{Symbol: "c1"}, domain.Currency{}, 0)
-	s2, _ := domain.NewSubscription("2", "user1", domain.MovementSubscription, "account-2", domain.Currency{Symbol: "c2"}, domain.Currency{}, 0)
-	s3, _ := domain.NewSubscription("3", "user2", domain.MovementSubscription, "account-3", domain.Currency{Symbol: "c1"}, domain.Currency{}, 0)
-	s4, _ := domain.NewSubscription("4", "user2", domain.ValueSubscription, "account-4", domain.Currency{Symbol: "c2"}, domain.Currency{}, 0)
-	s5, _ := domain.NewSubscription("5", "user3", domain.ValueSubscription, "account-5", domain.Currency{Symbol: "c1"}, domain.Currency{}, 0)
+	s1, _ := domain.NewSubscription("1", "user1", "account-1", domain.Currency{Symbol: "c1"}, 0)
+	s2, _ := domain.NewSubscription("2", "user1", "account-2", domain.Currency{Symbol: "c2"}, 0)
+	s3, _ := domain.NewSubscription("3", "user2", "account-3", domain.Currency{Symbol: "c1"}, 0)
+	s4, _ := domain.NewSubscription("4", "user2", "account-4", domain.Currency{Symbol: "c2"}, 0)
+	s5, _ := domain.NewSubscription("5", "user3", "account-5", domain.Currency{Symbol: "c1"}, 0)
 
 	testSubs = append(testSubs, s1, s2, s3, s4, s5)
 	subsRepo.Save(s1)
@@ -65,22 +65,6 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllForType(t *testing.T) {
-	expectedCount := 3
-	subs, _ := subsRepo.GetAllForType(domain.MovementSubscription)
-
-	if len(subs) != expectedCount {
-		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
-	}
-
-	expectedCount = 2
-	subs, _ = subsRepo.GetAllForType(domain.ValueSubscription)
-
-	if len(subs) != expectedCount {
-		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
-	}
-}
-
 func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 	expectedCount := 3
 	subs, _ := subsRepo.GetAllForCurrency("c1")
@@ -99,7 +83,7 @@ func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 
 func TestSubscriptionRepository_Save(t *testing.T) {
 	expectedSize := len(testSubs) + 1
-	testItem, _ := domain.NewSubscription("6", "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{}, 0)
+	testItem, _ := domain.NewSubscription("6", "user3", "account-6", domain.Currency{}, 0)
 
 	subsRepo.Save(testItem)
 

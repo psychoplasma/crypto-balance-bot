@@ -10,17 +10,7 @@ import (
 
 // Represents errors related to subscription
 var (
-	ErrInvalidSubscriptionType = errors.New("invalid subscription type")
-	ErrInvalidID               = errors.New("invalid identity")
-)
-
-// SubscriptionType enumarations
-type SubscriptionType string
-
-// Values for SubscriptionType
-const (
-	ValueSubscription    = SubscriptionType("value")
-	MovementSubscription = SubscriptionType("movement")
+	ErrInvalidID = errors.New("invalid identity")
 )
 
 // SubscriptionRepository represents common API for subscriptions repository
@@ -34,8 +24,6 @@ type SubscriptionRepository interface {
 	Get(id string) (*Subscription, error)
 	// GetAllForUser returns all subscriptions for the given user id
 	GetAllForUser(userID string) ([]*Subscription, error)
-	// GetAllForType returns all subscriptions for the given type: `value` or `movement`
-	GetAllForType(t SubscriptionType) ([]*Subscription, error)
 	// GetAllForCurrency returns all subscriptions for the given currency
 	GetAllForCurrency(currencySymbol string) ([]*Subscription, error)
 	// Save persists/updates the given subscription
@@ -48,11 +36,9 @@ type SubscriptionRepository interface {
 type Subscription struct {
 	id                  string
 	userID              string
-	stype               SubscriptionType
 	blockHeight         uint64
 	startingBlockHeight uint64
 	c                   Currency
-	ac                  Currency
 	account             string
 	totalReceived       *big.Int
 	totalSpent          *big.Int
@@ -75,26 +61,18 @@ func UserIDFrom(subscriptionID string) string {
 func NewSubscription(
 	id string,
 	userID string,
-	stype SubscriptionType,
 	account string,
 	c Currency,
-	against Currency,
 	startingBlockHeight uint64,
 ) (*Subscription, error) {
 	if id == "" {
 		return nil, ErrInvalidID
 	}
 
-	if isSubsctiptionTypeValid(stype) {
-		return nil, ErrInvalidSubscriptionType
-	}
-
 	s := &Subscription{
 		id:                  id,
 		userID:              userID,
-		stype:               stype,
 		c:                   c,
-		ac:                  against,
 		account:             account,
 		totalReceived:       new(big.Int),
 		totalSpent:          new(big.Int),
@@ -109,16 +87,14 @@ func NewSubscription(
 func DeepCopySubscription(
 	id string,
 	userID string,
-	stype SubscriptionType,
 	account string,
 	c Currency,
-	against Currency,
 	totalReceived *big.Int,
 	totalSpent *big.Int,
 	blockHeight uint64,
 	staringBlockHeight uint64,
 ) (*Subscription, error) {
-	s, err := NewSubscription(id, userID, stype, account, c, against, staringBlockHeight)
+	s, err := NewSubscription(id, userID, account, c, staringBlockHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +133,6 @@ func (s *Subscription) StartingBlockHeight() uint64 {
 	return s.startingBlockHeight
 }
 
-// AgainstCurrency returns against currency property
-func (s *Subscription) AgainstCurrency() Currency {
-	return s.ac
-}
-
 // Currency returns currency property
 func (s *Subscription) Currency() Currency {
 	return s.c
@@ -175,11 +146,6 @@ func (s *Subscription) ID() string {
 // UserID returns userID property
 func (s *Subscription) UserID() string {
 	return s.userID
-}
-
-// Type returns stype property
-func (s *Subscription) Type() SubscriptionType {
-	return s.stype
 }
 
 // ToString returns a string representation for this subscription
@@ -241,9 +207,4 @@ func (s *Subscription) spendBalance(b *big.Int) {
 
 func (s *Subscription) setBlockHeight(h uint64) {
 	s.blockHeight = h
-}
-
-func isSubsctiptionTypeValid(stype SubscriptionType) bool {
-	return stype != ValueSubscription &&
-		stype != MovementSubscription
 }

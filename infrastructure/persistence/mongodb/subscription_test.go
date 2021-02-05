@@ -98,40 +98,6 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	}
 }
 
-func TestSubscriptionRepository_GetAllForType(t *testing.T) {
-	cleanUp := helperCreateAndPopulateDB(t)
-	defer cleanUp()
-
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expectedCount := 3
-
-	if err := r.Begin(); err != nil {
-		t.Fatal(err)
-	}
-	subs, _ := r.GetAllForType(domain.MovementSubscription)
-	r.Success()
-
-	if len(subs) != expectedCount {
-		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
-	}
-
-	expectedCount = 2
-
-	if err := r.Begin(); err != nil {
-		t.Fatal(err)
-	}
-	subs, _ = r.GetAllForType(domain.ValueSubscription)
-	r.Success()
-
-	if len(subs) != expectedCount {
-		t.Fatalf("expected size %d, but got %d", expectedCount, len(subs))
-	}
-}
-
 func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
@@ -176,7 +142,7 @@ func TestSubscriptionRepository_Save(t *testing.T) {
 	}
 
 	expectedSize := r.Size() + 1
-	testItem, _ := domain.NewSubscription(r.NextIdentity("user3"), "user3", domain.MovementSubscription, "account-6", domain.Currency{}, domain.Currency{}, 0)
+	testItem, _ := domain.NewSubscription(r.NextIdentity("user3"), "user3", "account-6", domain.Currency{}, 0)
 
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)

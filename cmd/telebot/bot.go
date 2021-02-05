@@ -19,17 +19,11 @@ var commands = map[string]command{
 		Description:    "Displays the details of the given subscription",
 		ParameterCount: 1,
 	},
-	"subscribe_movement": {
-		Endpoint:       "/subscribe_for_movement",
-		Usage:          "/subscribe_for_movement <asset symbol> [<account's address> ...]",
+	"subscribe": {
+		Endpoint:       "/subscribe",
+		Usage:          "/subscribe <asset symbol> [<account's address> ...]",
 		Description:    "Subscribes to asset movements for an account",
 		ParameterCount: 2,
-	},
-	"subscribe_value": {
-		Endpoint:       "/subscribe_for_value",
-		Usage:          "/subscribe_for_value <asset symbol> <ticker symbol> <account's address> ",
-		Description:    "Subscribes to value change of an account for the given ticker",
-		ParameterCount: 3,
 	},
 	"unsubscribe": {
 		Endpoint:       "/unsubscribe",
@@ -123,7 +117,6 @@ func (b Bot) Stop() {
 
 func (b Bot) registerCommands() {
 	b.tb.Handle(commands["subscription_details"].Endpoint, b.subscriptionDetailsCMD)
-	b.tb.Handle(commands["subscribe_value"].Endpoint, b.subscribeForValueCMD)
 	b.tb.Handle(commands["subscribe_movement"].Endpoint, b.subscribeForMovementCMD)
 	b.tb.Handle(commands["unsubscribe"].Endpoint, b.unsubscribeCMD)
 	b.tb.Handle(commands["unsubscribe_all"].Endpoint, b.unsubscribeAllCMD)
@@ -157,28 +150,6 @@ func (b Bot) subscriptionDetailsCMD(m *tb.Message) {
 	b.tb.Send(m.Sender, fmt.Sprintf("Subscription Details\n ```\n%s```", s.ToString()), tb.ModeMarkdown)
 }
 
-func (b Bot) subscribeForValueCMD(m *tb.Message) {
-	params, err := commands["subscribe_value"].ValidateParameters(m.Payload)
-	if err != nil {
-		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
-		return
-	}
-
-	for _, account := range params[2:] {
-		if err := b.subsApp.SubscribeForValue(
-			m.Sender.Recipient(),
-			params[0],
-			params[1],
-			account,
-		); err != nil {
-			log.Printf("subscription failed, %s", err.Error())
-			return
-		}
-	}
-
-	b.tb.Send(m.Sender, fmt.Sprintf("subscribed %s:%s for", params[0], params[1]))
-}
-
 func (b Bot) subscribeForMovementCMD(m *tb.Message) {
 	params, err := commands["subscribe_movement"].ValidateParameters(m.Payload)
 	if err != nil {
@@ -187,7 +158,7 @@ func (b Bot) subscribeForMovementCMD(m *tb.Message) {
 	}
 
 	for _, account := range params[1:] {
-		if err := b.subsApp.SubscribeForMovement(
+		if err := b.subsApp.Subscribe(
 			m.Sender.Recipient(),
 			params[0],
 			account,

@@ -2,9 +2,7 @@
   {
     "_id": "user1:36e7e52f-8430-47a7-a841-0cdb2d77b4f0",
     "user_id": "user1",
-    "type": "movement",
     "currency": "eth",
-    "against_currency": "",
     "account": "account1",
     "total_received": "0",
     "total_spent": "0",
@@ -14,9 +12,7 @@
   {
     "_id": "user1:36e7e52f-8430-47a7-a841-0cdb2d77b4f1",
     "user_id": "user1",
-    "type": "movement",
     "currency": "eth",
-    "against_currency": "",
     "account": "account2",
     "total_received": "0",
     "total_spent": "0",
@@ -26,9 +22,7 @@
   {
     "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f2",
     "user_id": "user2",
-    "type": "movement",
     "currency": "eth",
-    "against_currency": "",
     "account": "account3",
     "total_received": "0",
     "total_spent": "0",
@@ -38,9 +32,7 @@
   {
     "_id": "user2:36e7e52f-8430-47a7-a841-0cdb2d77b4f3",
     "user_id": "user2",
-    "type": "value",
     "currency": "btc",
-    "against_currency": "",
     "account": "account4",
     "total_received": "0",
     "total_spent": "0",
@@ -50,9 +42,7 @@
   {
     "_id": "user3:36e7e52f-8430-47a7-a841-0cdb2d77b4f4",
     "user_id": "user3",
-    "type": "value",
     "currency": "btc",
-    "against_currency": "",
     "account": "account5",
     "total_received": "0",
     "total_spent": "0",

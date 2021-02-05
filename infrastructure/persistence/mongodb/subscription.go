@@ -129,18 +129,6 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 	return ToDomainSlice(subs.([]*Subscription)), nil
 }
 
-// GetAllForType returns all subscriptions for the given type: `value` or `movement`
-func (r *SubscriptionRepository) GetAllForType(stype domain.SubscriptionType) ([]*domain.Subscription, error) {
-	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByType(stype)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return ToDomainSlice(subs.([]*Subscription)), nil
-}
-
 // GetAllForCurrency returns all subscriptions for the given currency
 func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
@@ -244,24 +232,6 @@ func (r *SubscriptionRepository) getByUserID(userID string) ([]*Subscription, er
 	return subs, nil
 }
 
-func (r *SubscriptionRepository) getByType(stype domain.SubscriptionType) ([]*Subscription, error) {
-	ctx := context.Background()
-	query := bson.M{"type": stype}
-
-	cursor, err := r.subs.Find(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	subs := make([]*Subscription, 0)
-	if err = cursor.All(ctx, &subs); err != nil {
-		return nil, err
-	}
-
-	return subs, nil
-}
-
 func (r *SubscriptionRepository) getByCurrency(symbol string) ([]*Subscription, error) {
 	ctx := context.Background()
 	query := bson.M{"currency": symbol}
@@ -315,9 +285,7 @@ func (r *SubscriptionRepository) delete(id string) error {
 type Subscription struct {
 	ID                  string `bson:"_id" json:"_id"`
 	UserID              string `bson:"user_id" json:"user_id"`
-	Type                string `bson:"type" json:"type"`
 	Currency            string `bson:"currency" json:"currency"`
-	AgainstCurrency     string `bson:"against_currency" json:"against_currency"`
 	Account             string `bson:"account" json:"account"`
 	BlockHeight         uint64 `bson:"block_height" json:"block_height"`
 	TotalReceived       string `bson:"total_received" json:"total_received"`
@@ -334,9 +302,7 @@ func FromDomain(s *domain.Subscription) *Subscription {
 	return &Subscription{
 		ID:                  s.ID(),
 		UserID:              s.UserID(),
-		Type:                string(s.Type()),
 		Currency:            s.Currency().Symbol,
-		AgainstCurrency:     s.AgainstCurrency().Symbol,
 		Account:             s.Account(),
 		BlockHeight:         s.BlockHeight(),
 		StartingBlockHeight: s.StartingBlockHeight(),
@@ -364,10 +330,8 @@ func ToDomain(s *Subscription) *domain.Subscription {
 	sub, _ := domain.DeepCopySubscription(
 		s.ID,
 		s.UserID,
-		domain.SubscriptionType(s.Type),
 		s.Account,
 		services.CurrencyFactory[s.Currency],
-		services.CurrencyFactory[s.AgainstCurrency],
 		totalReceived,
 		totalSpent,
 		s.BlockHeight,
