@@ -30,29 +30,7 @@ func (sa *SubscriptionApplication) Subscribe(userID string, currencySymbol strin
 		return err
 	}
 
-	c, exist := services.CurrencyFactory[currencySymbol]
-	if !exist {
-		sa.r.Fail()
-		return errInexistentCurrency
-	}
-
-	cs, exist := services.CurrencyServiceFactory[currencySymbol]
-	if !exist {
-		return sa.returnError(errInexistentCurrency)
-	}
-
-	bh, err := cs.GetLatestBlockHeight()
-	if err != nil {
-		return sa.returnError(err)
-	}
-
-	s, err := domain.NewSubscription(
-		sa.r.NextIdentity(userID),
-		userID,
-		account,
-		c,
-		bh,
-	)
+	s, err := sa.subscribe(userID, currencySymbol, account)
 	if err != nil {
 		return sa.returnError(err)
 	}
@@ -140,13 +118,20 @@ func (sa *SubscriptionApplication) GetSubscriptionsForUser(userID string) ([]*do
 	return subs, nil
 }
 
-// GetSubscriptionsForCurrency returns all subscriptions for a given currency
-func (sa *SubscriptionApplication) GetSubscriptionsForCurrency(symbol string) ([]*domain.Subscription, error) {
+// GetSubscriptionsForCurrency returns all subscriptions for a given currency that are updated before the given blockheight
+func (sa *SubscriptionApplication) GetSubscriptionsForCurrency(currencySymbol string, updatedBefore uint64) ([]*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {
 		return nil, err
 	}
 
-	subs, err := sa.r.GetAllForCurrency(symbol)
+	cs, exist := services.CurrencyServiceFactory[currencySymbol]
+	if !exist {
+		return nil, errInexistentCurrency
+	}
+
+	cs.GetLatestBlockHeight()
+
+	subs, err := sa.r.GetAllForCurrency(currencySymbol, updatedBefore)
 	if err != nil {
 		return nil, sa.returnError(err)
 	}
@@ -170,6 +155,36 @@ func (sa *SubscriptionApplication) CheckAndApplyAccountMovements(s *domain.Subsc
 	sa.r.Success()
 
 	return nil
+}
+
+func (sa *SubscriptionApplication) subscribe(userID string, currencySymbol string, account string) (*domain.Subscription, error) {
+	c, exist := services.CurrencyFactory[currencySymbol]
+	if !exist {
+		return nil, errInexistentCurrency
+	}
+
+	cs, exist := services.CurrencyServiceFactory[currencySymbol]
+	if !exist {
+		return nil, errInexistentCurrency
+	}
+
+	bh, err := cs.GetLatestBlockHeight()
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := domain.NewSubscription(
+		sa.r.NextIdentity(userID),
+		userID,
+		account,
+		c,
+		bh,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (sa *SubscriptionApplication) checkAndApplyAccountMovements(s *domain.Subscription) error {

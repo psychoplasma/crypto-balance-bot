@@ -61,10 +61,10 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 }
 
 // GetAllForCurrency returns all subscriptions for the given currency
-func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
+func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string, updatedBefore uint64) ([]*domain.Subscription, error) {
 	subs := make([]*domain.Subscription, 0)
 	for _, s := range r.subsByID {
-		if s.Currency().Symbol == currencySymbol {
+		if s.Currency().Symbol == currencySymbol && s.BlockHeight() < updatedBefore {
 			subs = append(subs, s)
 		}
 	}

@@ -24,8 +24,8 @@ type SubscriptionRepository interface {
 	Get(id string) (*Subscription, error)
 	// GetAllForUser returns all subscriptions for the given user id
 	GetAllForUser(userID string) ([]*Subscription, error)
-	// GetAllForCurrency returns all subscriptions for the given currency
-	GetAllForCurrency(currencySymbol string) ([]*Subscription, error)
+	// GetAllForCurrency returns all subscriptions for the given currency that are updated before the given blocknumber
+	GetAllForCurrency(currencySymbol string, updatedBefore uint64) ([]*Subscription, error)
 	// Save persists/updates the given subscription
 	Save(s *Subscription) error
 	// Remove removes the given subscription from the persistance
@@ -190,7 +190,7 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 			}
 		}
 
-		s.setBlockHeight(blockHeight)
+		s.blockHeight = blockHeight
 	}
 
 	DomainEventPublisherInstance().Publish(
@@ -203,8 +203,4 @@ func (s *Subscription) receiveBalance(b *big.Int) {
 
 func (s *Subscription) spendBalance(b *big.Int) {
 	s.totalSpent = new(big.Int).Add(s.totalSpent, b)
-}
-
-func (s *Subscription) setBlockHeight(h uint64) {
-	s.blockHeight = h
 }

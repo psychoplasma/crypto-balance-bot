@@ -6,7 +6,7 @@
     "account": "account1",
     "total_received": "0",
     "total_spent": "0",
-    "block_height": 0,
+    "block_height": 10,
     "starting_block_height": 0
   },
   {
@@ -16,7 +16,7 @@
     "account": "account2",
     "total_received": "0",
     "total_spent": "0",
-    "block_height": 0,
+    "block_height": 20,
     "starting_block_height": 0
   },
   {
@@ -26,7 +26,7 @@
     "account": "account3",
     "total_received": "0",
     "total_spent": "0",
-    "block_height": 0,
+    "block_height": 5,
     "starting_block_height": 0
   },
   {
@@ -46,7 +46,7 @@
     "account": "account5",
     "total_received": "0",
     "total_spent": "0",
-    "block_height": 0,
+    "block_height": 9,
     "starting_block_height": 0
   }
 ]

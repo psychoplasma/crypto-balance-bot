@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"time"
@@ -8,6 +9,7 @@ import (
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/application"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/concurrency"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 )
 
 // Publisher defines the functionalities for publishing services
@@ -49,24 +51,34 @@ const maxParallelism = 1000
 
 // ObserverOptions represents configurables for MovementObserver
 type ObserverOptions struct {
-	ObserveInterval time.Duration // Sleep time inbetween every observal
-	MaxParallelism  int           // Maximum number of goroutines for one observal
-	ExitTimeout     time.Duration // Timeout when stopping the observer
+	// BlockHeightMargin will cause fetching subscriptions where the difference between
+	// the latest block height of the corresponding blockchain and the subscrition's
+	// last updated block height is more than this margin
+	// subscription.blockHeight < latestBlockHeight - margin
+	BlockHeightMargin uint64
+	// Sleep time inbetween every observal
+	ObserveInterval time.Duration
+	// Maximum number of goroutines for one observal
+	MaxParallelism int
+	// Timeout when stopping the observer
+	ExitTimeout time.Duration
 }
 
 // MovementObserver observes for account movements
 type MovementObserver struct {
-	sa              *application.SubscriptionApplication
-	w               *concurrency.Worker
-	p               Publisher
-	isObserving     bool
-	observeInterval time.Duration
-	maxParallelism  int
-	exitTimeout     time.Duration
-	currency        string
+	sa                *application.SubscriptionApplication
+	w                 *concurrency.Worker
+	p                 Publisher
+	isObserving       bool
+	observeInterval   time.Duration
+	maxParallelism    int
+	exitTimeout       time.Duration
+	blockHeightMargin uint64
+	currency          string
+	cs                domain.CurrencyService
 }
 
-// NewMovementObserver creates a new instance of MovementObserver
+// NewMovementObserver creates a new instance of MovementObserver. It will panic if no service can be found for the given currency
 func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, currency string, opts ...*ObserverOptions) *MovementObserver {
 	o := &MovementObserver{
 		currency:        currency,
@@ -78,6 +90,9 @@ func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, c
 	}
 
 	for _, opt := range opts {
+		// If no BlockHeightMargin is provided, it will set to 0 by default
+		o.blockHeightMargin = opt.BlockHeightMargin
+
 		if opt.ObserveInterval != 0 {
 			o.observeInterval = opt.ObserveInterval
 		}
@@ -88,6 +103,12 @@ func NewMovementObserver(sa *application.SubscriptionApplication, p Publisher, c
 			o.maxParallelism = opt.MaxParallelism
 		}
 	}
+
+	cs, ok := services.CurrencyServiceFactory[o.currency]
+	if !ok {
+		panic(fmt.Errorf("no service found for currency %s", o.currency))
+	}
+	o.cs = cs
 
 	o.w = concurrency.NewWorker(o.maxParallelism, o.exitTimeout)
 
@@ -119,7 +140,12 @@ func (o *MovementObserver) observe() error {
 		Subscribe(NewAccountAssetMovedEventSubscriber(o.p))
 	defer domain.DomainEventPublisherInstance().Reset()
 
-	subs, err := o.sa.GetSubscriptionsForCurrency(o.currency)
+	bh, err := o.cs.GetLatestBlockHeight()
+	if err != nil {
+		return err
+	}
+
+	subs, err := o.sa.GetSubscriptionsForCurrency(o.currency, bh-o.blockHeightMargin)
 	if err != nil {
 		return err
 	}

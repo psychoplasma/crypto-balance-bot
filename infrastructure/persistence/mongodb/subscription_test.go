@@ -107,12 +107,13 @@ func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCount := 3
+	expectedCount := 1
+	sinceBlockHeight := uint64(10)
 
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
 	}
-	subs, _ := r.GetAllForCurrency("eth")
+	subs, _ := r.GetAllForCurrency("eth", sinceBlockHeight)
 	r.Success()
 
 	if len(subs) != expectedCount {
@@ -124,7 +125,7 @@ func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
 	}
-	subs, _ = r.GetAllForCurrency("btc")
+	subs, _ = r.GetAllForCurrency("btc", sinceBlockHeight)
 	r.Success()
 
 	if len(subs) != expectedCount {

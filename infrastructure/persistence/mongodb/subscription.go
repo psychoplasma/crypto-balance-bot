@@ -22,6 +22,9 @@ import (
 // CollectionName is the name of Subscription collection
 const CollectionName = "Subscriptions"
 
+// DocumentLimitsPerQuery limits query result to a certain number of documents
+const DocumentLimitsPerQuery = 1000
+
 // SubscriptionRepository is MongoDB implementation of SubscriptionRepository
 type SubscriptionRepository struct {
 	client       *mongo.Client
@@ -130,9 +133,9 @@ func (r *SubscriptionRepository) GetAllForUser(userID string) ([]*domain.Subscri
 }
 
 // GetAllForCurrency returns all subscriptions for the given currency
-func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string) ([]*domain.Subscription, error) {
+func (r *SubscriptionRepository) GetAllForCurrency(currencySymbol string, updatedBefore uint64) ([]*domain.Subscription, error) {
 	subs, err := r.applyOperation(func() (interface{}, error) {
-		return r.getByCurrency(currencySymbol)
+		return r.getByCurrency(currencySymbol, updatedBefore)
 	})
 	if err != nil {
 		return nil, err
@@ -232,11 +235,16 @@ func (r *SubscriptionRepository) getByUserID(userID string) ([]*Subscription, er
 	return subs, nil
 }
 
-func (r *SubscriptionRepository) getByCurrency(symbol string) ([]*Subscription, error) {
+func (r *SubscriptionRepository) getByCurrency(symbol string, bh uint64) ([]*Subscription, error) {
 	ctx := context.Background()
-	query := bson.M{"currency": symbol}
+	opts := options.Find()
+	opts.SetLimit(DocumentLimitsPerQuery)
+	query := bson.M{
+		"currency":     symbol,
+		"block_height": bson.M{"$lt": bh},
+	}
 
-	cursor, err := r.subs.Find(ctx, query)
+	cursor, err := r.subs.Find(ctx, query, opts)
 	if err != nil {
 		return nil, err
 	}
