@@ -14,8 +14,8 @@ const parameterSeparator = " "
 
 var commands = map[string]command{
 	"subscription_details": {
-		Endpoint:       "/subscription_details",
-		Usage:          "/subscription_details <subscription ID>",
+		Endpoint:       "/subscription",
+		Usage:          "/subscription <subscription ID>",
 		Description:    "Displays the details of the given subscription",
 		ParameterCount: 1,
 	},
@@ -117,7 +117,7 @@ func (b Bot) Stop() {
 
 func (b Bot) registerCommands() {
 	b.tb.Handle(commands["subscription_details"].Endpoint, b.subscriptionDetailsCMD)
-	b.tb.Handle(commands["subscribe_movement"].Endpoint, b.subscribeForMovementCMD)
+	b.tb.Handle(commands["subscribe"].Endpoint, b.subscribeForMovementCMD)
 	b.tb.Handle(commands["unsubscribe"].Endpoint, b.unsubscribeCMD)
 	b.tb.Handle(commands["unsubscribe_all"].Endpoint, b.unsubscribeAllCMD)
 	b.tb.Handle(commands["my_subscriptions"].Endpoint, b.mySubscriptionsCMD)
@@ -151,7 +151,7 @@ func (b Bot) subscriptionDetailsCMD(m *tb.Message) {
 }
 
 func (b Bot) subscribeForMovementCMD(m *tb.Message) {
-	params, err := commands["subscribe_movement"].ValidateParameters(m.Payload)
+	params, err := commands["subscribe"].ValidateParameters(m.Payload)
 	if err != nil {
 		b.tb.Send(m.Sender, err.Error(), tb.ModeMarkdown)
 		return
