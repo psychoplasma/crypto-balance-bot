@@ -12,17 +12,17 @@ import (
 func TestApply(t *testing.T) {
 	addr := "test-addr-1"
 	mv1 := domain.NewAccountMovements(addr)
-	mv1.ReceiveBalance(10, "txhash-test1", big.NewInt(5))
+	mv1.Receive(10, 1613721092, "txhash-test1", big.NewInt(5), "addr-sender")
 
 	s, err := domain.NewSubscription("sub-1", "user-1", addr, services.ETH, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	initReceivedBalance := new(big.Int).Set(s.TotalReceived())
-	eventSubs := NewMockEventSubscriber(
+	subscriber := NewMockEventSubscriber(
 		reflect.TypeOf(new(domain.AccountAssetsMovedEvent)))
 	domain.DomainEventPublisherInstance().Reset()
-	domain.DomainEventPublisherInstance().Subscribe(eventSubs)
+	domain.DomainEventPublisherInstance().Subscribe(subscriber)
 
 	s.ApplyMovements(mv1)
 
@@ -31,7 +31,7 @@ func TestApply(t *testing.T) {
 		t.Fatalf("expected balance diff is %d but got %d", 5, diff.Int64())
 	}
 
-	if !eventSubs.IsEventHandled() {
+	if !subscriber.IsEventHandled() {
 		t.Fatal("expected to publish an AccountAssetsMovedEvent but got nothing")
 	}
 }
@@ -39,7 +39,7 @@ func TestApply(t *testing.T) {
 func TestApply_WithAlreadyAppliedMovements(t *testing.T) {
 	addr := "test-addr-1"
 	mv1 := domain.NewAccountMovements(addr)
-	mv1.ReceiveBalance(10, "txhash-test1", big.NewInt(5))
+	mv1.Receive(10, 1613721092, "txhash-test1", big.NewInt(5), "addr-sender")
 
 	s, err := domain.NewSubscription("sub-1", "user-1", addr, services.ETH, 0)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestApply_WithAlreadyAppliedMovements(t *testing.T) {
 	}
 
 	mv2 := domain.NewAccountMovements(addr)
-	mv2.ReceiveBalance(10, "txhash-test1", big.NewInt(9))
+	mv2.Receive(9, 1613721092, "txhash-test1", big.NewInt(9), "addr-sender")
 	eventSubs.Reset()
 	domain.DomainEventPublisherInstance().Reset()
 	domain.DomainEventPublisherInstance().Subscribe(eventSubs)
@@ -70,4 +70,8 @@ func TestApply_WithAlreadyAppliedMovements(t *testing.T) {
 	if diff.Cmp(big.NewInt(5)) != 0 {
 		t.Fatalf("expected balance diff is %d but got %d", 5, diff.Int64())
 	}
+}
+
+func TestFilter(t *testing.T) {
+
 }

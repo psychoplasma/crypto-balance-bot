@@ -14,7 +14,7 @@ type FilterType string
 const (
 	Amount     FilterType = "amount"
 	AddressOn  FilterType = "addressOn"
-	AddressOff FilterType = "blacklistOff"
+	AddressOff FilterType = "addressOff"
 )
 
 // Filter represents a domain entity which decides
@@ -26,11 +26,12 @@ type Filter struct {
 }
 
 // NewAmountFilter creates a new instance of Amount type of Filter
-func NewAmountFilter(amount *big.Int, must bool) (*Filter, error) {
-	if amount == nil {
-		return nil, fmt.Errorf("nil amount")
+func NewAmountFilter(amount string, must bool) (*Filter, error) {
+	a, ok := new(big.Int).SetString(amount, 10)
+	if !ok {
+		return nil, fmt.Errorf("amount(%s) is not a valid number representation", amount)
 	}
-	return NewFilter(Amount, &amountCondition{Amount: amount}, must)
+	return NewFilter(Amount, &amountCondition{Amount: a}, must), nil
 }
 
 // NewAddressOnFilter creates a new instance of AddressOn type of Filter
@@ -38,7 +39,7 @@ func NewAddressOnFilter(address string, must bool) (*Filter, error) {
 	if address == "" {
 		return nil, fmt.Errorf("empty address")
 	}
-	return NewFilter(AddressOn, &addressOnCondition{Address: address}, must)
+	return NewFilter(AddressOn, &addressOnCondition{Address: address}, must), nil
 }
 
 // NewAddressOffFilter creates a new instance of AddressOff type of Filter
@@ -46,21 +47,21 @@ func NewAddressOffFilter(address string, must bool) (*Filter, error) {
 	if address == "" {
 		return nil, fmt.Errorf("empty address")
 	}
-	return NewFilter(AddressOff, &addressOffCondition{Address: address}, must)
+	return NewFilter(AddressOff, &addressOffCondition{Address: address}, must), nil
 }
 
 // NewFilter creates a new instance of Filter
-func NewFilter(t FilterType, c condition, must bool) (*Filter, error) {
+func NewFilter(t FilterType, c condition, must bool) *Filter {
 	return &Filter{
 		c:      c,
 		isMust: must,
 		t:      t,
-	}, nil
+	}
 }
 
 // CheckCondition checks whether or not the given conditions satisfy this filter
-func (f *Filter) CheckCondition(condition interface{}) bool {
-	return f.c.CheckAgainst(condition)
+func (f *Filter) CheckCondition(t *Transfer) bool {
+	return f.c.CheckAgainst(t)
 }
 
 // IsMust returns true if this filter always must be satisfied to publish a notification
@@ -101,7 +102,7 @@ func (f *Filter) DeserializeCondition(data []byte) error {
 // Condition represents condition parameters and
 // its condition check for a specific type of Filter
 type condition interface {
-	CheckAgainst(i interface{}) bool
+	CheckAgainst(t *Transfer) bool
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
 }
@@ -110,9 +111,8 @@ type amountCondition struct {
 	Amount *big.Int `json:"amount"`
 }
 
-func (c *amountCondition) CheckAgainst(amount interface{}) bool {
-	a, _ := amount.(*big.Int)
-	return a.Cmp(c.Amount) > -1
+func (c *amountCondition) CheckAgainst(t *Transfer) bool {
+	return t.Amount.Cmp(c.Amount) > -1
 }
 
 func (c *amountCondition) Serialize() ([]byte, error) {
@@ -127,8 +127,8 @@ type addressOnCondition struct {
 	Address string `json:"address"`
 }
 
-func (c *addressOnCondition) CheckAgainst(address interface{}) bool {
-	return c.Address == address.(string)
+func (c *addressOnCondition) CheckAgainst(t *Transfer) bool {
+	return c.Address == t.Address
 }
 
 func (c *addressOnCondition) Serialize() ([]byte, error) {
@@ -143,8 +143,8 @@ type addressOffCondition struct {
 	Address string `json:"address"`
 }
 
-func (c *addressOffCondition) CheckAgainst(address interface{}) bool {
-	return c.Address != address.(string)
+func (c *addressOffCondition) CheckAgainst(t *Transfer) bool {
+	return c.Address != t.Address
 }
 
 func (c *addressOffCondition) Serialize() ([]byte, error) {

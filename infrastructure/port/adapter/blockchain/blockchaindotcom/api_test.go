@@ -18,8 +18,8 @@ func TestGetAccountMovements(t *testing.T) {
 	}
 
 	changesExistForBlock := false
-	for blockHeight := range mv.Changes {
-		if blockHeight >= blockNum {
+	for _, t := range mv.Transfers {
+		if t.BlockHeight >= blockNum {
 			changesExistForBlock = true
 			break
 		}

@@ -8,22 +8,26 @@ import (
 
 // Type of balance change
 const (
-	ReceivedBalance = iota
-	SpentBalance
+	Received = iota
+	Spent
 )
 
-// BalanceChange represents a change in balance
-type balanceChange struct {
-	Type   int
-	Amount *big.Int
-	TxHash string
+// Transfer represents a change in balance
+type Transfer struct {
+	Type        int
+	Address     string
+	Amount      *big.Int
+	BlockHeight uint64
+	Timestamp   uint64
+	TxHash      string
 }
 
-func (bc balanceChange) Value() *big.Int {
+// Value returns the normalized value depending on the tpye of the balance change
+func (bc Transfer) Value() *big.Int {
 	switch bc.Type {
-	case ReceivedBalance:
+	case Received:
 		return new(big.Int).Set(bc.Amount)
-	case SpentBalance:
+	case Spent:
 		return new(big.Int).Neg(bc.Amount)
 	default:
 		return big.NewInt(0)
@@ -33,48 +37,52 @@ func (bc balanceChange) Value() *big.Int {
 // AccountMovements represents the total change
 // made to Account in a certain time range
 type AccountMovements struct {
-	Address string
-	Blocks  []uint64
-	Changes map[uint64][]*balanceChange
+	Address   string
+	Transfers []*Transfer
 }
 
 // NewAccountMovements creates a new instance of AccountMovement
 func NewAccountMovements(address string) *AccountMovements {
 	return &AccountMovements{
-		Address: address,
-		Changes: make(map[uint64][]*balanceChange, 0),
-		Blocks:  []uint64{},
+		Address:   address,
+		Transfers: make([]*Transfer, 0),
 	}
 }
 
 // Sort sorts the changes by block height in ascending order
 func (am *AccountMovements) Sort() *AccountMovements {
-	sort.Slice(am.Blocks, func(i, j int) bool { return am.Blocks[i] < am.Blocks[j] })
+	sort.Slice(am.Transfers, func(i, j int) bool {
+		return am.Transfers[i].BlockHeight < am.Transfers[j].BlockHeight
+	})
 	return am
 }
 
-// ReceiveBalance adds a balance change as received to the list of changes at the given block height
-func (am *AccountMovements) ReceiveBalance(blockHeight uint64, txHash string, amount *big.Int) {
-	am.addBalanceChange(blockHeight, txHash, amount, ReceivedBalance)
+// Receive adds a transfer as received to the list of changes at the given block height
+func (am *AccountMovements) Receive(blockHeight uint64, timestamp uint64, txHash string, amount *big.Int, address string) {
+	am.Transfers = append(
+		am.Transfers,
+		&Transfer{
+			Address:     address,
+			Amount:      new(big.Int).Set(amount),
+			BlockHeight: blockHeight,
+			Timestamp:   timestamp,
+			TxHash:      txHash,
+			Type:        Received,
+		},
+	)
 }
 
-// SpendBalance adds a balance change as spent to the list of changes at the given block height
-func (am *AccountMovements) SpendBalance(blockHeight uint64, txHash string, amount *big.Int) {
-	am.addBalanceChange(blockHeight, txHash, amount, SpentBalance)
-}
-
-func (am *AccountMovements) addBalanceChange(blockHeight uint64, txHash string, amount *big.Int, bType int) {
-	if am.Changes[blockHeight] == nil {
-		am.Blocks = append(am.Blocks, blockHeight)
-		am.Changes[blockHeight] = make([]*balanceChange, 0)
-	}
-
-	am.Changes[blockHeight] = append(
-		am.Changes[blockHeight],
-		&balanceChange{
-			Amount: new(big.Int).Set(amount),
-			TxHash: txHash,
-			Type:   bType,
+// Spend adds a transfer as spent to the list of changes at the given block height
+func (am *AccountMovements) Spend(blockHeight uint64, timestamp uint64, txHash string, amount *big.Int, address string) {
+	am.Transfers = append(
+		am.Transfers,
+		&Transfer{
+			Address:     address,
+			Amount:      new(big.Int).Set(amount),
+			BlockHeight: blockHeight,
+			Timestamp:   timestamp,
+			TxHash:      txHash,
+			Type:        Spent,
 		},
 	)
 }
@@ -84,24 +92,26 @@ type AccountAssetsMovedEvent struct {
 	version    int
 	occurredOn time.Time
 	subsID     string
-	acms       *AccountMovements
+	account    string
+	ts         []*Transfer
 	c          Currency
 }
 
 // NewAccountAssetsMovedEvent creates a new instance from AccountMovements
-func NewAccountAssetsMovedEvent(subsID string, c Currency, acms *AccountMovements) *AccountAssetsMovedEvent {
+func NewAccountAssetsMovedEvent(subsID string, account string, c Currency, ts []*Transfer) *AccountAssetsMovedEvent {
 	return &AccountAssetsMovedEvent{
 		version:    1,
 		occurredOn: time.Now(),
 		subsID:     subsID,
-		acms:       acms,
+		account:    account,
 		c:          c,
+		ts:         ts,
 	}
 }
 
-// AccountMovements returns AccountMovements
-func (evt *AccountAssetsMovedEvent) AccountMovements() *AccountMovements {
-	return evt.acms
+// Account returns Account property
+func (evt *AccountAssetsMovedEvent) Account() string {
+	return evt.account
 }
 
 // Currency returns the currency property
@@ -112,6 +122,11 @@ func (evt *AccountAssetsMovedEvent) Currency() Currency {
 // SubscriptionID returns the subsID property
 func (evt *AccountAssetsMovedEvent) SubscriptionID() string {
 	return evt.subsID
+}
+
+// Transfers returns transfers property
+func (evt *AccountAssetsMovedEvent) Transfers() []*Transfer {
+	return evt.ts
 }
 
 // OccurredOn returns event time

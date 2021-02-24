@@ -43,21 +43,13 @@ func TestBitcoinTranslator_ToAccountMovements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(mvs.Changes) != 1 {
-		t.Fatalf("expected movements count is %d but got %d", 1, len(mvs.Changes))
-	}
-
-	if mvs.Changes[blockHeight] == nil {
-		t.Fatalf("expected to have changes at block#%d but got nothing", blockHeight)
-	}
-
-	if len(mvs.Changes[blockHeight]) != 2 {
-		t.Fatalf("expected movement's balance change count is %d but got %d", 2, len(mvs.Changes[blockHeight]))
+	if len(mvs.Transfers) != 2 {
+		t.Fatalf("expected movement's balance change count is %d but got %d", 2, len(mvs.Transfers))
 	}
 
 	balanceDiff := big.NewInt(0)
-	for _, ch := range mvs.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
+	for _, t := range mvs.Transfers {
+		balanceDiff = balanceDiff.Add(balanceDiff, t.Value())
 	}
 
 	if balanceDiff.Cmp(big.NewInt(-2)) != 0 {
@@ -95,21 +87,13 @@ func TestEthereumTranslator_ToAccountMovements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(mvs.Changes) != 1 {
-		t.Fatalf("expected movements count is %d but got %d", 1, len(mvs.Changes))
-	}
-
-	if mvs.Changes[blockHeight] == nil {
-		t.Fatalf("expected to have changes at block#%d but got nothing", blockHeight)
-	}
-
-	if len(mvs.Changes[blockHeight]) != 1 {
-		t.Fatalf("expected movement's balance change count is %d but got %d", 1, len(mvs.Changes[blockHeight]))
+	if len(mvs.Transfers) != 1 {
+		t.Fatalf("expected movement's balance change count is %d but got %d", 1, len(mvs.Transfers))
 	}
 
 	balanceDiff := big.NewInt(0)
-	for _, ch := range mvs.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
+	for _, t := range mvs.Transfers {
+		balanceDiff = balanceDiff.Add(balanceDiff, t.Value())
 	}
 
 	if new(big.Int).Abs(balanceDiff).Uint64() == -value {

@@ -17,17 +17,8 @@ func TestGetAccountMovements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	numOfChanges := 0
-	for blockHeight, chs := range mv.Changes {
-		numOfChanges += len(chs)
-
-		if blockHeight < blockNum {
-			t.Fatalf("expected to have blocks higher than %d but got a block#%d", blockNum, blockHeight)
-		}
-	}
-
-	if numOfChanges == 0 {
-		t.Fatalf("expected to have changes since block#%d but got nothing", blockNum)
+	if len(mv.Transfers) == 0 {
+		t.Fatalf("expected to have transfers since block#%d but got nothing", blockNum)
 	}
 }
 

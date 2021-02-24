@@ -44,14 +44,14 @@ var commands = map[string]command{
 		ParameterCount: 0,
 	},
 	"available_assets": {
-		Endpoint:       "/available_assets",
-		Usage:          "/available_assets",
+		Endpoint:       "/assets",
+		Usage:          "/assets",
 		Description:    "Shows available asset for a subscription",
 		ParameterCount: 0,
 	},
 	"available_commands": {
-		Endpoint:       "/available_commands",
-		Usage:          "/available_commands",
+		Endpoint:       "/commands",
+		Usage:          "/commands",
 		Description:    "Shows available commands",
 		ParameterCount: 0,
 	},
@@ -205,9 +205,9 @@ func (b Bot) mySubscriptionsCMD(m *tb.Message) {
 		msg = "I don't have any subscriptions"
 	} else {
 		for _, s := range subs {
-			msg += fmt.Sprintf("`%s` : `%s[%s]`\n\n", s.ID(), s.Currency().Symbol, s.Account())
+			msg += fmt.Sprintf("%s\n\n", s.ToString())
 		}
-		msg = fmt.Sprintf("My Subscriptions: \n\n%s", msg)
+		msg = fmt.Sprintf("My Subscriptions: \n\n`%s`", msg)
 	}
 
 	b.tb.Send(m.Sender, msg, tb.ModeMarkdown)

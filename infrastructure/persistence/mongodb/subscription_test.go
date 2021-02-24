@@ -73,6 +73,10 @@ func TestSubscriptionRepository_Get(t *testing.T) {
 			s.ID(), s.UserID(),
 		)
 	}
+
+	if len(s.Filters()) != len(testItem.Filters()) {
+		t.Fatalf("expected %d filters, but got %d", len(testItem.Filters()), len(s.Filters()))
+	}
 }
 
 func TestSubscriptionRepository_GetAllForUser(t *testing.T) {

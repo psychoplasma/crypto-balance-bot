@@ -42,6 +42,7 @@ type Subscription struct {
 	account             string
 	totalReceived       *big.Int
 	totalSpent          *big.Int
+	filters             []*Filter
 }
 
 // UserIDFrom extracts UserID from SubscriptionID.
@@ -74,6 +75,7 @@ func NewSubscription(
 		userID:              userID,
 		c:                   c,
 		account:             account,
+		filters:             make([]*Filter, 0),
 		totalReceived:       new(big.Int),
 		totalSpent:          new(big.Int),
 		blockHeight:         startingBlockHeight,
@@ -89,6 +91,7 @@ func DeepCopySubscription(
 	userID string,
 	account string,
 	c Currency,
+	filters []*Filter,
 	totalReceived *big.Int,
 	totalSpent *big.Int,
 	blockHeight uint64,
@@ -100,6 +103,7 @@ func DeepCopySubscription(
 	}
 
 	s.blockHeight = blockHeight
+	s.filters = filters
 	s.totalReceived = totalReceived
 	s.totalSpent = totalSpent
 
@@ -143,6 +147,11 @@ func (s *Subscription) ID() string {
 	return s.id
 }
 
+// Filters returns filters property
+func (s *Subscription) Filters() []*Filter {
+	return s.filters
+}
+
 // UserID returns userID property
 func (s *Subscription) UserID() string {
 	return s.userID
@@ -162,45 +171,79 @@ func (s *Subscription) ToString() string {
 	)
 }
 
+// AddFilter adds a new filter
+func (s *Subscription) AddFilter(f *Filter) {
+	s.filters = append(s.filters, f)
+}
+
 // ApplyMovements applies a set of movements to the current state of this account
-// Movements in a AccountMovements object should be descending-ordered
-// by block height. Otherwise after the first Movement applied, the
-// remaining will be ignored.
 func (s *Subscription) ApplyMovements(acms *AccountMovements) {
-	if acms == nil || acms.Address != s.account {
+	if acms == nil {
+		return
+	}
+
+	if acms.Address != s.account {
 		log.Printf("account's address(%s) doesn't match with the movement's address(%s), not applying", s.Account(), acms.Address)
 		return
 	}
 
-	for _, blockHeight := range acms.Blocks {
-		if blockHeight <= s.BlockHeight() {
-			log.Printf("movement's blockheight(%d) is less than the last updated blockheight(%d), not applying", blockHeight, s.BlockHeight())
+	acms.Sort()
+	for _, t := range acms.Transfers {
+		if t.BlockHeight < s.BlockHeight() {
+			log.Printf("movement's blockheight(%d) is less than the last updated blockheight(%d), not applying", t.BlockHeight, s.BlockHeight())
 			return
 		}
 
-		for _, c := range acms.Changes[blockHeight] {
-			switch c.Type {
-			case ReceivedBalance:
-				s.receiveBalance(c.Amount)
-				break
-			case SpentBalance:
-				s.spendBalance(c.Amount)
-				break
-			default:
+		switch t.Type {
+		case Received:
+			s.receive(t.Amount)
+			break
+		case Spent:
+			s.spend(t.Amount)
+			break
+		default:
+			continue
+		}
+
+		s.blockHeight = t.BlockHeight
+	}
+
+	filteredTransfers := s.applyFilters(acms.Transfers)
+
+	DomainEventPublisherInstance().Publish(
+		NewAccountAssetsMovedEvent(s.ID(), s.account, s.Currency(), filteredTransfers))
+}
+
+func (s *Subscription) applyFilters(ts []*Transfer) []*Transfer {
+	if len(s.filters) == 0 {
+		return ts
+	}
+
+	filtered := []*Transfer{}
+	for _, t := range ts {
+		ok := false
+		for _, f := range s.filters {
+			r := f.CheckCondition(t)
+
+			if f.isMust {
+				ok = ok && r
+			} else {
+				ok = ok || r
 			}
 		}
 
-		s.blockHeight = blockHeight
+		if ok {
+			filtered = append(filtered, t)
+		}
 	}
 
-	DomainEventPublisherInstance().Publish(
-		NewAccountAssetsMovedEvent(s.ID(), s.Currency(), acms))
+	return filtered
 }
 
-func (s *Subscription) receiveBalance(b *big.Int) {
+func (s *Subscription) receive(b *big.Int) {
 	s.totalReceived = new(big.Int).Add(s.totalReceived, b)
 }
 
-func (s *Subscription) spendBalance(b *big.Int) {
+func (s *Subscription) spend(b *big.Int) {
 	s.totalSpent = new(big.Int).Add(s.totalSpent, b)
 }

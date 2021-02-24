@@ -34,14 +34,18 @@ func (et EthereumTranslator) ToAccountMovements(address string, v interface{}) (
 			return nil, fmt.Errorf("etherscanio ethereum transalation error, cannot convert tx.Value(%s) to bigint", tx.Value)
 		}
 
+		from := blockchain.NormalizeEthereumAddress(tx.From)
+		to := blockchain.NormalizeEthereumAddress(tx.To)
+		timestamp, _ := strconv.ParseUint(tx.Timestamp, 10, 64)
+
 		// Any value transfers from this address will be reflected as a spent
-		if blockchain.NormalizeEthereumAddress(tx.From) == address {
-			am.SpendBalance(blockHeight, tx.Hash, val)
+		if from == address {
+			am.Spend(blockHeight, timestamp, tx.Hash, val, to)
 		}
 
 		// Any value transfers to this address will be reflected as a receive
-		if blockchain.NormalizeEthereumAddress(tx.To) == address {
-			am.ReceiveBalance(blockHeight, tx.Hash, val)
+		if to == address {
+			am.Receive(blockHeight, timestamp, tx.Hash, val, from)
 		}
 	}
 

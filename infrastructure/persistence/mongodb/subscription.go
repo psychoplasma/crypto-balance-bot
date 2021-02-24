@@ -291,14 +291,22 @@ func (r *SubscriptionRepository) delete(id string) error {
 
 // Subscription represents a document in MongoDB corresponding to domain.Subscription
 type Subscription struct {
-	ID                  string `bson:"_id" json:"_id"`
-	UserID              string `bson:"user_id" json:"user_id"`
-	Currency            string `bson:"currency" json:"currency"`
-	Account             string `bson:"account" json:"account"`
-	BlockHeight         uint64 `bson:"block_height" json:"block_height"`
-	TotalReceived       string `bson:"total_received" json:"total_received"`
-	TotalSpent          string `bson:"total_spent" json:"total_spent"`
-	StartingBlockHeight uint64 `bson:"starting_block_height" json:"starting_block_height"`
+	ID                  string   `bson:"_id" json:"_id"`
+	UserID              string   `bson:"user_id" json:"user_id"`
+	Currency            string   `bson:"currency" json:"currency"`
+	Account             string   `bson:"account" json:"account"`
+	BlockHeight         uint64   `bson:"block_height" json:"block_height"`
+	TotalReceived       string   `bson:"total_received" json:"total_received"`
+	TotalSpent          string   `bson:"total_spent" json:"total_spent"`
+	StartingBlockHeight uint64   `bson:"starting_block_height" json:"starting_block_height"`
+	Filters             []Filter `bson:"filters" json:"filters"`
+}
+
+// Filter represents a document in MongoDB corresponding to domain.Filter
+type Filter struct {
+	Condition string `bson:"condition" json:"condition"`
+	IsMust    bool   `bson:"is_must" json:"is_must"`
+	Type      string `bson:"type" json:"type"`
 }
 
 // FromDomain converts domain.Subscription model to a MongoDB document representation
@@ -307,12 +315,27 @@ func FromDomain(s *domain.Subscription) *Subscription {
 		return nil
 	}
 
+	filters := []Filter{}
+	for _, f := range s.Filters() {
+		data, err := f.SerializeCondition()
+		if err != nil {
+			panic(err)
+		}
+
+		filters = append(filters, Filter{
+			Condition: string(data),
+			Type:      string(f.Type()),
+			IsMust:    f.IsMust(),
+		})
+	}
+
 	return &Subscription{
 		ID:                  s.ID(),
 		UserID:              s.UserID(),
 		Currency:            s.Currency().Symbol,
 		Account:             s.Account(),
 		BlockHeight:         s.BlockHeight(),
+		Filters:             filters,
 		StartingBlockHeight: s.StartingBlockHeight(),
 		TotalReceived:       s.TotalReceived().String(),
 		TotalSpent:          s.TotalSpent().String(),
@@ -335,11 +358,23 @@ func ToDomain(s *Subscription) *domain.Subscription {
 		panic(fmt.Errorf("%s is not a valid bignumber representation", s.TotalSpent))
 	}
 
+	filters := []*domain.Filter{}
+	for _, f := range s.Filters {
+		filter := domain.NewFilter(domain.FilterType(f.Type), nil, f.IsMust)
+		err := filter.DeserializeCondition([]byte(f.Condition))
+		if err != nil {
+			panic(err)
+		}
+
+		filters = append(filters, filter)
+	}
+
 	sub, _ := domain.DeepCopySubscription(
 		s.ID,
 		s.UserID,
 		s.Account,
 		services.CurrencyFactory[s.Currency],
+		filters,
 		totalReceived,
 		totalSpent,
 		s.BlockHeight,

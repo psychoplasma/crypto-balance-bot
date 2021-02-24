@@ -30,6 +30,7 @@ type Transaction struct {
 	Hash        string   `json:"hash"`
 	Inputs      []Input  `json:"inputs"`
 	Outputs     []Output `json:"out"`
+	Timestamp   uint64   `json:"time"`
 }
 
 // AddressInfo is a data structure returning from Blockchain.com API

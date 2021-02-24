@@ -1,6 +1,7 @@
 package etherscanio
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -32,6 +33,7 @@ type Transaction struct {
 	To          string `json:"to"`
 	Value       string `json:"value"`
 	Status      string `json:"txreceipt_status"`
+	Timestamp   string `json:"timeStamp"`
 }
 
 // API implements CurrencyAPI for Bitcoin
@@ -70,7 +72,16 @@ func (a *API) fetchAddressTxs(address string, startBlock uint64) ([]Transaction,
 		return nil, err
 	}
 
-	txs := r.Result.([]Transaction)
+	d, err := json.Marshal(r.Result)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := []Transaction{}
+	if err := json.Unmarshal(d, &txs); err != nil {
+		return nil, err
+	}
+
 	if r.Status != "0" && len(txs) == 0 {
 		return nil, errors.New(r.Message)
 	}

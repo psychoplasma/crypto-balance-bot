@@ -10,7 +10,7 @@ import (
 
 func TestToAccountMovements(t *testing.T) {
 	addr1 := "test-addr-1"
-	addr1MixedCase := "teSt-aDdR-1"
+	addr1MixedCase := "teSt-addR-1"
 	addr2 := "test-addr-2"
 	blockHeight := uint64(10)
 	txs := []etherscanio.Transaction{
@@ -20,6 +20,7 @@ func TestToAccountMovements(t *testing.T) {
 			To:          addr2,
 			Value:       "100",
 			Status:      "1",
+			Timestamp:   "1610503881",
 		},
 		{
 			BlockHeight: fmt.Sprint(blockHeight),
@@ -27,6 +28,7 @@ func TestToAccountMovements(t *testing.T) {
 			To:          addr2,
 			Value:       "100",
 			Status:      "0",
+			Timestamp:   "1610503881",
 		},
 	}
 
@@ -35,21 +37,13 @@ func TestToAccountMovements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(mv.Changes) != 1 {
-		t.Fatalf("expected movements count is %d but got %d", 1, len(mv.Changes))
-	}
-
-	if mv.Changes[blockHeight] == nil {
-		t.Fatalf("expected to have balance changes at block#%d but got nothing", blockHeight)
-	}
-
-	if len(mv.Changes[blockHeight]) != 1 {
-		t.Fatalf("expected balance change count is %d but got %d", 2, len(mv.Changes[blockHeight]))
+	if len(mv.Transfers) != 1 {
+		t.Fatalf("expected movements count is %d but got %d", 1, len(mv.Transfers))
 	}
 
 	balanceDiff := new(big.Int)
-	for _, ch := range mv.Changes[blockHeight] {
-		balanceDiff = balanceDiff.Add(balanceDiff, ch.Value())
+	for _, t := range mv.Transfers {
+		balanceDiff = balanceDiff.Add(balanceDiff, t.Value())
 	}
 
 	if balanceDiff.Cmp(big.NewInt(-100)) != 0 {

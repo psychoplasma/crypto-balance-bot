@@ -19,7 +19,7 @@ func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 				continue
 			}
 
-			am.SpendBalance(tx.BlockHeight, tx.Hash, in.PrevOutput.Value)
+			am.Spend(tx.BlockHeight, tx.Timestamp, tx.Hash, in.PrevOutput.Value, "")
 		}
 
 		// Outputs will be reflected as a receive
@@ -28,7 +28,7 @@ func (bt BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 				continue
 			}
 
-			am.ReceiveBalance(tx.BlockHeight, tx.Hash, out.Value)
+			am.Receive(tx.BlockHeight, tx.Timestamp, tx.Hash, out.Value, "")
 		}
 	}
 

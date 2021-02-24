@@ -86,6 +86,84 @@ func (sa *SubscriptionApplication) UnsubscribeAllForUser(userID string) error {
 	return nil
 }
 
+// AddAmountFilter adds a new amount filter
+func (sa *SubscriptionApplication) AddAmountFilter(subsID string, amount string, must bool) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	s, err := sa.r.Get(subsID)
+	if err != nil {
+		return sa.returnError(err)
+	}
+
+	f, err := domain.NewAmountFilter(amount, must)
+	if err != nil {
+		return sa.returnError(err)
+	}
+	s.AddFilter(f)
+
+	if err := sa.r.Save(s); err != nil {
+		return sa.returnError(err)
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
+// AddAddressOnFilter adds a new address-off filter
+func (sa *SubscriptionApplication) AddAddressOnFilter(subsID string, address string, must bool) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	s, err := sa.r.Get(subsID)
+	if err != nil {
+		return sa.returnError(err)
+	}
+
+	f, err := domain.NewAddressOnFilter(address, must)
+	if err != nil {
+		return sa.returnError(err)
+	}
+	s.AddFilter(f)
+
+	if err := sa.r.Save(s); err != nil {
+		return sa.returnError(err)
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
+// AddAddressOffFilter adds a new address-on filter
+func (sa *SubscriptionApplication) AddAddressOffFilter(subsID string, address string, must bool) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	s, err := sa.r.Get(subsID)
+	if err != nil {
+		return sa.returnError(err)
+	}
+
+	f, err := domain.NewAddressOffFilter(address, must)
+	if err != nil {
+		return sa.returnError(err)
+	}
+	s.AddFilter(f)
+
+	if err := sa.r.Save(s); err != nil {
+		return sa.returnError(err)
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
 // GetSubscription returns the details of the given subscription
 func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {

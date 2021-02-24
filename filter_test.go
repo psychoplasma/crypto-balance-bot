@@ -8,23 +8,24 @@ import (
 )
 
 func TestCheckAgainst_WithAmountType(t *testing.T) {
-	if _, err := domain.NewAmountFilter(nil, true); err == nil {
+	if _, err := domain.NewAmountFilter("", true); err == nil {
 		t.Fatalf("expected an error but got nothing")
 	}
 
-	amountLess := big.NewInt(4)
-	amountMore := big.NewInt(6)
-	filterAmount := big.NewInt(5)
+	conditionCheck := &domain.Transfer{Amount: big.NewInt(6)}
+	conditionFail := &domain.Transfer{Amount: big.NewInt(4)}
+
+	filterAmount := "5"
 	f, err := domain.NewAmountFilter(filterAmount, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(amountMore) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(amountLess) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
@@ -34,19 +35,20 @@ func TestCheckAgainst_WithAddressOnType(t *testing.T) {
 		t.Fatalf("expected an error but got nothing")
 	}
 
-	addressSame := "address-1"
-	addressDiff := "address-2"
+	conditionCheck := &domain.Transfer{Address: "address-1"}
+	conditionFail := &domain.Transfer{Address: "address-2"}
+
 	filterAddress := "address-1"
 	f, err := domain.NewAddressOnFilter(filterAddress, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(addressSame) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(addressDiff) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
@@ -56,26 +58,27 @@ func TestCheckAgainst_WithAddressOffType(t *testing.T) {
 		t.Fatalf("expected an error but got nothing")
 	}
 
-	addressSame := "address-1"
-	addressDiff := "address-2"
+	conditionCheck := &domain.Transfer{Address: "address-2"}
+	conditionFail := &domain.Transfer{Address: "address-1"}
+
 	filterAddress := "address-1"
 	f, err := domain.NewAddressOffFilter(filterAddress, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(addressDiff) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(addressSame) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
 
 func TestSerializeCondition_WithAmountType(t *testing.T) {
 	expected := "{\"amount\":5}"
-	f, err := domain.NewAmountFilter(big.NewInt(5), true)
+	f, err := domain.NewAmountFilter("5", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,76 +129,69 @@ func TestSerializeCondition_WithAddressOffType(t *testing.T) {
 
 func TestDeserializeCondition_WithAmountType(t *testing.T) {
 	condition := "{\"amount\":5}"
-	amountLess := big.NewInt(4)
-	amountMore := big.NewInt(6)
-	f, err := domain.NewFilter(domain.Amount, nil, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	conditionCheck := &domain.Transfer{Amount: big.NewInt(6)}
+	conditionFail := &domain.Transfer{Amount: big.NewInt(4)}
+
+	f := domain.NewFilter(domain.Amount, nil, true)
 
 	if err := f.DeserializeCondition([]byte(condition)); err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(amountMore) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(amountLess) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
 
 func TestDeserializeCondition_WithAddressOnType(t *testing.T) {
 	condition := "{\"address\":\"address-1\"}"
-	addressSame := "address-1"
-	addressDiff := "address-2"
-	f, err := domain.NewFilter(domain.AddressOn, nil, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	conditionCheck := &domain.Transfer{Address: "address-1"}
+	conditionFail := &domain.Transfer{Address: "address-2"}
+
+	f := domain.NewFilter(domain.AddressOn, nil, true)
 
 	if err := f.DeserializeCondition([]byte(condition)); err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(addressSame) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(addressDiff) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
 
 func TestDeserializeCondition_WithAddressOffType(t *testing.T) {
 	condition := "{\"address\":\"address-1\"}"
-	addressSame := "address-1"
-	addressDiff := "address-2"
-	f, err := domain.NewFilter(domain.AddressOff, nil, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	conditionCheck := &domain.Transfer{Address: "address-2"}
+	conditionFail := &domain.Transfer{Address: "address-1"}
+
+	f := domain.NewFilter(domain.AddressOff, nil, true)
 
 	if err := f.DeserializeCondition([]byte(condition)); err != nil {
 		t.Fatal(err)
 	}
 
-	if !f.CheckCondition(addressDiff) {
+	if !f.CheckCondition(conditionCheck) {
 		t.Fatalf("expected to pass the condition check but failed")
 	}
 
-	if f.CheckCondition(addressSame) {
+	if f.CheckCondition(conditionFail) {
 		t.Fatalf("expected to fail the condition check but passed")
 	}
 }
 
 func TestDeserializeCondition_WithUnknownType(t *testing.T) {
 	condition := "{\"address\":\"address-1\"}"
-	f, err := domain.NewFilter(domain.FilterType("asdadas"), nil, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := domain.NewFilter(domain.FilterType("asdadas"), nil, true)
 
 	if err := f.DeserializeCondition([]byte(condition)); err == nil {
 		t.Fatalf("expected an error but got nothing")
@@ -204,10 +200,7 @@ func TestDeserializeCondition_WithUnknownType(t *testing.T) {
 
 func TestDeserializeCondition_WithErrornousCondition(t *testing.T) {
 	condition := "{\"whatdowewant\":\"moretests\", \"amount\": 5}"
-	f, err := domain.NewFilter(domain.Amount, nil, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := domain.NewFilter(domain.Amount, nil, true)
 
 	if err := f.DeserializeCondition([]byte(condition)); err == nil {
 		t.Fatalf("expected an error but got nothing")

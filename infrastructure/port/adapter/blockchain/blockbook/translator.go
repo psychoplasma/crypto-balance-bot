@@ -27,7 +27,7 @@ func (tr BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 			if !ok {
 				return nil, fmt.Errorf("bitcoin translation error, cannot convert in.Value(%s) to bigint", in.Value)
 			}
-			am.SpendBalance(tx.BlockHeight, tx.TxID, val)
+			am.Spend(tx.BlockHeight, tx.BlockTime, tx.TxID, val, "")
 		}
 
 		// Outputs will be reflected as a receive
@@ -40,7 +40,7 @@ func (tr BitcoinTranslator) ToAccountMovements(address string, v interface{}) (*
 			if !ok {
 				return nil, fmt.Errorf("bitcoin translation error, cannot convert out.Value(%s) to bigint", out.Value)
 			}
-			am.ReceiveBalance(tx.BlockHeight, tx.TxID, val)
+			am.Receive(tx.BlockHeight, tx.BlockTime, tx.TxID, val, "")
 		}
 	}
 
@@ -69,12 +69,12 @@ func (tr EthereumTranslator) ToAccountMovements(address string, v interface{}) (
 
 		// Any value transfers from this address will be reflected as a spent
 		if blockchain.NormalizeEthereumAddress(tx.Inputs[0].Addresses[0]) == address {
-			am.SpendBalance(tx.BlockHeight, tx.TxID, val)
+			am.Spend(tx.BlockHeight, tx.BlockTime, tx.TxID, val, tx.Outputs[0].Addresses[0])
 		}
 
 		// Any value transfers to this address will be reflected as a receive
 		if blockchain.NormalizeEthereumAddress(tx.Outputs[0].Addresses[0]) == address {
-			am.ReceiveBalance(tx.BlockHeight, tx.TxID, val)
+			am.Receive(tx.BlockHeight, tx.BlockTime, tx.TxID, val, tx.Inputs[0].Addresses[0])
 		}
 	}
 
