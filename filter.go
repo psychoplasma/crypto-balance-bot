@@ -99,12 +99,18 @@ func (f *Filter) DeserializeCondition(data []byte) error {
 	}
 }
 
+// ToString returns human-readable string representation of this filter
+func (f *Filter) ToString() string {
+	return fmt.Sprintf("filters any transfer whose %s. Is this a must? -> %v", f.c.ToString(), f.isMust)
+}
+
 // Condition represents condition parameters and
 // its condition check for a specific type of Filter
 type condition interface {
 	CheckAgainst(t *Transfer) bool
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
+	ToString() string
 }
 
 type amountCondition struct {
@@ -123,6 +129,10 @@ func (c *amountCondition) Deserialize(data []byte) error {
 	return decodeJSONStrictly(data, c)
 }
 
+func (c *amountCondition) ToString() string {
+	return fmt.Sprintf("amount is greater than or equal to %s", c.Amount.String())
+}
+
 type addressOnCondition struct {
 	Address string `json:"address"`
 }
@@ -139,6 +149,10 @@ func (c *addressOnCondition) Deserialize(data []byte) error {
 	return decodeJSONStrictly(data, c)
 }
 
+func (c *addressOnCondition) ToString() string {
+	return fmt.Sprintf("second-party address is equal to \"%s\"", c.Address)
+}
+
 type addressOffCondition struct {
 	Address string `json:"address"`
 }
@@ -153,6 +167,10 @@ func (c *addressOffCondition) Serialize() ([]byte, error) {
 
 func (c *addressOffCondition) Deserialize(data []byte) error {
 	return decodeJSONStrictly(data, c)
+}
+
+func (c *addressOffCondition) ToString() string {
+	return fmt.Sprintf("second-party address is different than \"%s\"", c.Address)
 }
 
 func decodeJSONStrictly(data []byte, i interface{}) error {
