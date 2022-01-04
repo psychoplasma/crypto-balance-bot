@@ -164,6 +164,27 @@ func (sa *SubscriptionApplication) AddAddressOffFilter(subsID string, address st
 	return nil
 }
 
+// RemoveFilters removes all the filters for the given subscription
+func (sa *SubscriptionApplication) RemoveFilters(subsID string) error {
+	if err := sa.r.Begin(); err != nil {
+		return err
+	}
+
+	s, err := sa.r.Get(subsID)
+	if err != nil {
+		return sa.returnError(err)
+	}
+	s.RemoveFilters()
+
+	if err := sa.r.Save(s); err != nil {
+		return sa.returnError(err)
+	}
+
+	sa.r.Success()
+
+	return nil
+}
+
 // GetSubscription returns the details of the given subscription
 func (sa *SubscriptionApplication) GetSubscription(id string) (*domain.Subscription, error) {
 	if err := sa.r.Begin(); err != nil {

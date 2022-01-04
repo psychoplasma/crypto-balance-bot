@@ -12,10 +12,11 @@ import (
 var subsApp *application.SubscriptionApplication
 
 func main() {
-	subsRepo, err := mongodb.NewSubscriptionRepository("mongodb://127.0.0.1:27017", "CryptoBalanceBot")
-	if err != nil {
+	subsRepo := mongodb.NewSubscriptionRepository()
+	if err := subsRepo.Connect("mongodb://127.0.0.1:27017", "CryptoBalanceBot"); err != nil {
 		panic(err)
 	}
+	defer subsRepo.Disconnect()
 	subsApp = application.NewSubscriptionApplication(subsRepo)
 
 	listenAndServe()

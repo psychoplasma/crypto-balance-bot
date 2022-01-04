@@ -7,20 +7,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/persistence/mongodb"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 	"gopkg.in/yaml.v2"
 )
 
 // Config represents configuration options for the observer
 type Config struct {
-	Token       string        `yaml:"token"`
-	PollingTime time.Duration `yaml:"polling-time"`
-	Currency    string        `yaml:"currency"`
-	Database    struct {
+	Token    string `yaml:"token"`
+	Currency string `yaml:"currency"`
+	Database struct {
+		Type string `yaml:"type"`
 		Name string `yaml:"name"`
 		URI  string `yaml:"uri"`
 	} `yaml:"database"`
@@ -49,10 +48,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	subsRepo, err := mongodb.NewSubscriptionRepository(c.Database.URI, c.Database.Name)
-	if err != nil {
+	subsRepo := services.RepositoryServiceFactory[c.Database.Type]
+	if subsRepo == nil {
+		panic(fmt.Errorf("there is no repository implementation for the given database type(%s)", c.Database.Type))
+	}
+
+	if err := subsRepo.Connect(c.Database.URI, c.Database.Name); err != nil {
 		panic(err)
 	}
+	defer subsRepo.Disconnect()
 
 	o := NewMovementObserver(
 		application.NewSubscriptionApplication(subsRepo),

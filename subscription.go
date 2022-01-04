@@ -16,6 +16,10 @@ var (
 // SubscriptionRepository represents common API for subscriptions repository
 type SubscriptionRepository interface {
 	UnitOfWork
+	// Connect creates a connection to the given database instance and the table
+	Connect(uri string, databaseName string) error
+	// Disconnect closes connection with the connected database instance
+	Disconnect() error
 	// NextIdentity returns the next available identity
 	NextIdentity(userID string) string
 	// Size returns the total number of subscriptions persited in the repository
@@ -176,6 +180,11 @@ func (s *Subscription) AddFilter(f *Filter) {
 	s.filters = append(s.filters, f)
 }
 
+// RemoveFilters removes all the filters
+func (s *Subscription) RemoveFilters() {
+	s.filters = make([]*Filter, 0)
+}
+
 // ApplyMovements applies a set of movements to the current state of this account
 func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 	if acms == nil {
@@ -209,9 +218,10 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 	}
 
 	filteredTransfers := s.applyFilters(acms.Transfers)
-
-	DomainEventPublisherInstance().Publish(
-		NewAccountAssetsMovedEvent(s.ID(), s.account, s.Currency(), filteredTransfers))
+	if len(filteredTransfers) > 0 {
+		DomainEventPublisherInstance().Publish(
+			NewAccountAssetsMovedEvent(s.ID(), s.account, s.Currency(), filteredTransfers))
+	}
 }
 
 func (s *Subscription) applyFilters(ts []*Transfer) []*Transfer {
@@ -221,19 +231,29 @@ func (s *Subscription) applyFilters(ts []*Transfer) []*Transfer {
 
 	filtered := []*Transfer{}
 	for _, t := range ts {
-		ok := false
+		onlyMust := false
+		must := true
+		optional := false
+
 		for _, f := range s.filters {
 			r := f.CheckCondition(t)
 
 			if f.isMust {
-				ok = ok && r
+				onlyMust = true
+				must = must && r
 			} else {
-				ok = ok || r
+				optional = optional || r
 			}
 		}
 
-		if ok {
-			filtered = append(filtered, t)
+		if onlyMust {
+			if must {
+				filtered = append(filtered, t)
+			}
+		} else {
+			if optional {
+				filtered = append(filtered, t)
+			}
 		}
 	}
 

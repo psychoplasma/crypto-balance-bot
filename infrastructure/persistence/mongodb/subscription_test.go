@@ -26,8 +26,8 @@ func TestSubscriptionRepository_NextIdentity(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -40,8 +40,8 @@ func TestSubscriptionRepository_Size(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -54,8 +54,8 @@ func TestSubscriptionRepository_Get(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -83,8 +83,8 @@ func TestSubscriptionRepository_GetAllForUser(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -106,8 +106,8 @@ func TestSubscriptionRepository_GetAllForCurrency(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -141,8 +141,8 @@ func TestSubscriptionRepository_Save(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -173,8 +173,8 @@ func TestSubscriptionRepository_Remove(t *testing.T) {
 	cleanUp := helperCreateAndPopulateDB(t)
 	defer cleanUp()
 
-	r, err := mongodb.NewSubscriptionRepository(dbURI, dbName)
-	if err != nil {
+	r := mongodb.NewSubscriptionRepository()
+	if err := r.Connect(dbURI, dbName); err != nil {
 		t.Fatal(err)
 	}
 

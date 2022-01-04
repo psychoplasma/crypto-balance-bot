@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	domain "github.com/psychoplasma/crypto-balance-bot"
-	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,7 +27,6 @@ const DocumentLimitsPerQuery = 1000
 // SubscriptionRepository is MongoDB implementation of SubscriptionRepository
 type SubscriptionRepository struct {
 	client       *mongo.Client
-	databaseURI  string
 	session      mongo.Session
 	sessionMutex *sync.Mutex
 	subs         *mongo.Collection
@@ -36,24 +34,38 @@ type SubscriptionRepository struct {
 }
 
 // NewSubscriptionRepository creates a new instance of SubscriptionRepository
-func NewSubscriptionRepository(uri string, databaseName string) (*SubscriptionRepository, error) {
+func NewSubscriptionRepository() *SubscriptionRepository {
 	repo := &SubscriptionRepository{
-		databaseURI: uri,
 		txOpts: options.Transaction().
 			SetWriteConcern(writeconcern.New(writeconcern.WMajority())).
 			SetReadConcern(readconcern.Snapshot()),
 		sessionMutex: new(sync.Mutex),
 	}
 
-	if err := repo.connect(); err != nil {
-		return nil, err
+	return repo
+}
+
+// Connect creates a connection to the given mongodb instance and the database
+func (r *SubscriptionRepository) Connect(uri string, databaseName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		return err
 	}
 
-	repo.subs = repo.client.
+	r.client = client
+	r.subs = r.client.
 		Database(databaseName).
 		Collection(CollectionName)
 
-	return repo, nil
+	return nil
+}
+
+// Disconnect closes connection with the connected mongodb instance
+func (r *SubscriptionRepository) Disconnect() error {
+	return r.client.Disconnect(context.Background())
 }
 
 // Begin starts a new session for ACID operation
@@ -162,20 +174,6 @@ func (r *SubscriptionRepository) Remove(s *domain.Subscription) error {
 	return err
 }
 
-func (r *SubscriptionRepository) connect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(r.databaseURI))
-	if err != nil {
-		return err
-	}
-
-	r.client = client
-
-	return nil
-}
-
 func (r *SubscriptionRepository) checkConnection() {
 	ctx := context.Background()
 	if err := r.client.Ping(ctx, readpref.Primary()); err != nil {
@@ -186,10 +184,6 @@ func (r *SubscriptionRepository) checkConnection() {
 			panic(err)
 		}
 	}
-}
-
-func (r *SubscriptionRepository) disconnect() error {
-	return r.client.Disconnect(context.Background())
 }
 
 func (r *SubscriptionRepository) applyOperation(op func() (interface{}, error)) (interface{}, error) {
@@ -294,6 +288,7 @@ type Subscription struct {
 	ID                  string   `bson:"_id" json:"_id"`
 	UserID              string   `bson:"user_id" json:"user_id"`
 	Currency            string   `bson:"currency" json:"currency"`
+	CurrencyDecimal     string   `bson:"currency_decimal" json:"currency_decimal"`
 	Account             string   `bson:"account" json:"account"`
 	BlockHeight         uint64   `bson:"block_height" json:"block_height"`
 	TotalReceived       string   `bson:"total_received" json:"total_received"`
@@ -333,6 +328,7 @@ func FromDomain(s *domain.Subscription) *Subscription {
 		ID:                  s.ID(),
 		UserID:              s.UserID(),
 		Currency:            s.Currency().Symbol,
+		CurrencyDecimal:     s.Currency().Decimal.String(),
 		Account:             s.Account(),
 		BlockHeight:         s.BlockHeight(),
 		Filters:             filters,
@@ -350,12 +346,17 @@ func ToDomain(s *Subscription) *domain.Subscription {
 
 	totalReceived, ok := new(big.Int).SetString(s.TotalReceived, 10)
 	if !ok {
-		panic(fmt.Errorf("%s is not a valid bignumber representation", s.TotalReceived))
+		panic(fmt.Errorf("TotalReceived (%s) is not a valid bignumber representation", s.TotalReceived))
 	}
 
 	totalSpent, ok := new(big.Int).SetString(s.TotalSpent, 10)
 	if !ok {
-		panic(fmt.Errorf("%s is not a valid bignumber representation", s.TotalSpent))
+		panic(fmt.Errorf("TotalSpent (%s) is not a valid bignumber representation", s.TotalSpent))
+	}
+
+	decimal, ok := new(big.Int).SetString(s.CurrencyDecimal, 10)
+	if !ok {
+		panic(fmt.Errorf("CurrencyDecimal (%s) is not a valid bignumber representation", s.CurrencyDecimal))
 	}
 
 	filters := []*domain.Filter{}
@@ -373,7 +374,10 @@ func ToDomain(s *Subscription) *domain.Subscription {
 		s.ID,
 		s.UserID,
 		s.Account,
-		services.CurrencyFactory[s.Currency],
+		domain.Currency{
+			Symbol:  s.Currency,
+			Decimal: decimal,
+		},
 		filters,
 		totalReceived,
 		totalSpent,
