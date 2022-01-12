@@ -223,13 +223,6 @@ func (sa *SubscriptionApplication) GetSubscriptionsForCurrency(currencySymbol st
 		return nil, err
 	}
 
-	cs, exist := services.CurrencyServiceFactory[currencySymbol]
-	if !exist {
-		return nil, errInexistentCurrency
-	}
-
-	cs.GetLatestBlockHeight()
-
 	subs, err := sa.r.GetAllForCurrency(currencySymbol, updatedBefore)
 	if err != nil {
 		return nil, sa.returnError(err)
