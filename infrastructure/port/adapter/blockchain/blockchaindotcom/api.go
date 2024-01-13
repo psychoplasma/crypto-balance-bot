@@ -3,6 +3,7 @@ package blockchaindotcom
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/net"
@@ -55,6 +56,9 @@ type API struct {
 	t blockchain.Translator
 }
 
+// Delay between consecutive api requests, not to choking api provider
+const requestDelay = 200 * time.Millisecond
+
 // NewAPI creates a new instance of API
 func NewAPI(t blockchain.Translator) *API {
 	return &API{
@@ -104,6 +108,7 @@ func (a *API) GetLatestBlockHeight() (uint64, error) {
 // API call to https://blockchain.info/rawaddr/$bitcoin_address.
 // For further info: https://www.blockchain.com/api/blockchain_api
 func (a *API) fetchAddressInfo(address string, pLimit int, pOffset int) (*AddressInfo, error) {
+	defer time.Sleep(requestDelay)
 	url := fmt.Sprintf("https://blockchain.info/rawaddr/%s?n=%d&offset=%d", address, pLimit, pOffset)
 	ad := &AddressInfo{}
 	if err := net.GetJSON(url, ad); err != nil {
@@ -116,6 +121,7 @@ func (a *API) fetchAddressInfo(address string, pLimit int, pOffset int) (*Addres
 // API call to https://blockchain.info/latestblock
 // For further info: https://www.blockchain.com/api/blockchain_api
 func (a *API) fetchLatestBlock() (*Block, error) {
+	defer time.Sleep(requestDelay)
 	b := &Block{}
 	if err := net.GetJSON("https://blockchain.info/latestblock", b); err != nil {
 		return nil, err

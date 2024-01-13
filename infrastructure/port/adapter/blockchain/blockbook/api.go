@@ -2,6 +2,7 @@ package blockbook
 
 import (
 	"fmt"
+	"time"
 
 	domain "github.com/psychoplasma/crypto-balance-bot"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/net"
@@ -110,6 +111,9 @@ type API struct {
 	t           blockchain.Translator
 }
 
+// Delay between consecutive api requests, not to choking api provider
+const requestDelay = 200 * time.Millisecond
+
 // NewAPI creates a new instance of BitcoinAPI
 func NewAPI(hostURL string, t blockchain.Translator, pagingLimit ...*int) *API {
 	api := &API{
@@ -167,6 +171,7 @@ func (a *API) GetLatestBlockHeight() (uint64, error) {
 // API call to blockbook's api/v2/address endpoint
 // For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#get-address
 func (a *API) fetchAddressTxs(address string, since uint64, page int) (*AddressTxs, error) {
+	defer time.Sleep(requestDelay)
 	url := fmt.Sprintf("%s/api/v2/address/%s?details=txs&page=%d&pageSize=%d&from=%d", a.hostURL, address, page, a.pagingLimit, since)
 	ad := &AddressTxs{}
 	if err := net.GetJSON(url, &ad); err != nil {
@@ -179,6 +184,7 @@ func (a *API) fetchAddressTxs(address string, since uint64, page int) (*AddressT
 // API call to blockbook's api/v2 endpoint
 // For further info: https://github.com/trezor/blockbook/blob/master/docs/api.md#status
 func (a *API) fetchStatus() (*Status, error) {
+	defer time.Sleep(requestDelay)
 	url := fmt.Sprintf("%s/api/v2", a.hostURL)
 	s := &Status{}
 	if err := net.GetJSON(url, &s); err != nil {

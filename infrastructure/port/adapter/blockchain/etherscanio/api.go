@@ -41,6 +41,9 @@ type API struct {
 	t blockchain.Translator
 }
 
+// Delay between consecutive api requests, not to choking api provider
+const requestDelay = 200 * time.Millisecond
+
 // NewAPI creates a new instance of API
 func NewAPI(t blockchain.Translator) *API {
 	return &API{
@@ -66,6 +69,7 @@ func (a *API) GetLatestBlockHeight() (uint64, error) {
 // API call to https://api.etherscan.io/api?module=account&action=txlist&address=
 // For further info: https://etherscan.io/apis#accounts
 func (a *API) fetchAddressTxs(address string, startBlock uint64) ([]Transaction, error) {
+	defer time.Sleep(requestDelay)
 	url := fmt.Sprintf("https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=%d&sort=desc", address, startBlock)
 	r := &Response{}
 	if err := net.GetJSON(url, r); err != nil {
@@ -92,6 +96,7 @@ func (a *API) fetchAddressTxs(address string, startBlock uint64) ([]Transaction,
 // API call to https://api.etherscan.io/api?module=block&action=getblocknobytime
 // For further info: https://etherscan.io/apis#blocks
 func (a *API) fetchBlockHeightByTimestamp(timestamp int64) (uint64, error) {
+	defer time.Sleep(requestDelay)
 	url := fmt.Sprintf("https://api.etherscan.io/api?module=block&action=getblocknobytime&timestamp=%d&closest=before", timestamp)
 	r := &Response{}
 	if err := net.GetJSON(url, r); err != nil {
