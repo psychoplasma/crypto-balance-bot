@@ -1,0 +1,21 @@
+# Telebot configurations
+token: "telegram bot token"
+polling-time: 3
+
+# Observer configurations
+currency: eth
+interval: 10
+parallelism: 1000
+exitTimeout: 30
+
+database:
+  type: mongodb
+  name: CryptoBalanceBot
+  # 'mongodb_cryptobalancebot' is the container name.
+  # Docker network maps containers by their name.
+  # So you don't need to change this unless you change the container name.
+  uri: mongodb://mongodb_cryptobalancebot:27017
+
+resource:
+  host: "0.0.0.0"
+  port: 1234
