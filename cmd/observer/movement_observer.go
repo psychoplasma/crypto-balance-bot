@@ -45,7 +45,7 @@ func (s *AccountAssetMovedEventSubscriber) SubscribedToEventType() reflect.Type 
 	return reflect.TypeOf(new(domain.AccountAssetsMovedEvent))
 }
 
-const observeInterval = time.Second * 10
+const observeInterval = time.Second * 20
 const exitTimeout = time.Second * 30
 const maxParallelism = 1000
 
@@ -155,7 +155,11 @@ func (o *MovementObserver) observe() error {
 	for _, s := range subs {
 		// Create a local copy of the slice's items to pass to the worker's runner function
 		cs := *s
-		if _, err := o.w.Run(func() { o.sa.CheckAndApplyAccountMovements(&cs) }); err != nil {
+		if _, err := o.w.Run(func() {
+			if e := o.sa.CheckAndApplyAccountMovements(&cs); e != nil {
+				log.Printf("error while observing: %s", e.Error())
+			}
+		}); err != nil {
 			return err
 		}
 	}
