@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
@@ -147,7 +148,13 @@ func TestSubscriptionRepository_Save(t *testing.T) {
 	}
 
 	expectedSize := r.Size() + 1
-	testItem, _ := domain.NewSubscription(r.NextIdentity("user3"), "user3", "account-6", domain.Currency{}, 0)
+	testItem, _ := domain.NewSubscription(
+		r.NextIdentity("user3"),
+		"user3",
+		"account-6",
+		domain.Currency{Decimal: big.NewInt(1000)},
+		0,
+	)
 
 	if err := r.Begin(); err != nil {
 		t.Fatal(err)
