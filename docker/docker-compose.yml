@@ -5,25 +5,21 @@ services:
     container_name: mongodb_cryptobalancebot
     image: mongo:5.0.5
     restart: always
-    environment:
-      # MONGO_INITDB_ROOT_USERNAME: ""
-      # MONGO_INITDB_ROOT_PASSWORD: ""
-      - MONGO_INITDB_DATABASE="CryptoBalanceBot"
-      - DATA_DIR="/User/mmorca/"
+    expose:
+      - 27017
     volumes:
-      - $DATA_DIR:/data/db
+      - ${DB_DATA_DIR}:/data/db
 
   telebot:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        CMD_NAME: telebot
-        RELEASE_TAG: origin/master
+        - CMD_NAME=telebot
     container_name: telebot_cryptobalancebot
-    image: telebot:$RELEASE_TAG
+    image: telebot
     environment:
-      - CONFIG_DIR="/User/mmorca/"
+      - CONFIG_DIR=${CONFIG_DIR}
     volumes:
       - $CONFIG_DIR:/cryptobalancebot
   
@@ -32,12 +28,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        CMD_NAME: observer
-        RELEASE_TAG: origin/master
+        - CMD_NAME=observer
     container_name: observer_cryptobalancebot
-    image: observer:$RELEASE_TAG
+    image: observer
     environment:
-      - CONFIG_DIR="/User/mmorca/"
+      - CONFIG_DIR=${CONFIG_DIR}
     volumes:
       - $CONFIG_DIR:/cryptobalancebot
 
@@ -46,13 +41,12 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        CMD_NAME: resource
-        RELEASE_TAG: origin/master
+        - CMD_NAME=resource
     container_name: resource_cryptobalancebot
-    image: resource:$RELEASE_TAG
+    image: resource
     environment:
-      - CONFIG_DIR="/User/mmorca/"
+      - CONFIG_DIR=${CONFIG_DIR}
     volumes:
       - $CONFIG_DIR:/cryptobalancebot
     ports:
-      - 1234:1234
+      - ${RESOURCE_PORT}:1234

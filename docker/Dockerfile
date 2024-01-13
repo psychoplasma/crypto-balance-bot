@@ -23,42 +23,35 @@ RUN echo "Getting required CA certifates"; \
 # Install Go
 ENV GO_VERSION=1.13.4
 ENV PATH=$PATH:/usr/local/go/bin
-RUN echo "Installing Go" \
-  && wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz \
-  && tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz \
-  && go version \
-  && rm go$GO_VERSION.linux-amd64.tar.gz
+RUN echo "Installing Go"; \
+  wget https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz; \
+  tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz; \
+  go version; \
+  rm go$GO_VERSION.linux-amd64.tar.gz
 
-# Build Command
+# Build program commands
+# CMD_NAME will be passed through the docker compose file.
+# Possible values are 'telebot', 'resource' and 'observer'.
+# Default value is set to 'observer'.
 ENV GOPATH=/go
-ARG RELEASE_TAG=origin/master
 ARG CMD_NAME=observer
-# RUN echo "Building ${CMD_NAME}" \
-#   && set -ux \
-#   && mkdir -p $GOPATH/src && cd $GOPATH/src \
-#   && git clone https://github.com/psychoplasma/crypto-balance-bot.git \
-#   && cd crypto-balance-bot \
-#   # && git checkout tags/$RELEASE_TAG \
-#   && git checkout $RELEASE_TAG \
-#   && go mod download \
-#   && BUILDTIME=$(date --iso-8601=seconds) \
-#   && GITCOMMIT=$(git describe --always --dirty) \
-#   && LDFLAGS="-X github.com/psychoplasma/crypto-balance-bot/common.version=${RELEASE_TAG} -X github.com/psychoplasma/crypto-balance-bot/common.gitcommit=${GITCOMMIT} -X github.com/psychoplasma/crypto-balance-bot/common.buildtime=${BUILDTIME}" \
-#   && cd cmd/$CMD_NAME \
-#   && go build -ldflags="-s -w ${LDFLAGS}"
-
-RUN mkdir -p $GOPATH/src/crypto-balance-bot
-COPY fake $GOPATH/src/crypto-balance-bot/
-RUN echo "Building ${CMD_NAME}" \
-  && set -ux \
-  && cd $GOPATH/src/crypto-balance-bot \
-  && ls -la \
-  && go mod download \
-  && cd cmd/$CMD_NAME \
-  && go build
+RUN echo "Building ${CMD_NAME}"; \
+  set -ux; \
+  mkdir -p $GOPATH/src && cd $GOPATH/src; \
+  git clone https://github.com/psychoplasma/crypto-balance-bot.git; \
+  cd crypto-balance-bot; \
+  go mod download; \
+  BUILDTIME=$(date --iso-8601=seconds); \
+  GITCOMMIT=$(git describe --always --dirty); \
+  LDFLAGS="-X github.com/psychoplasma/crypto-balance-bot/common.version=master -X github.com/psychoplasma/crypto-balance-bot/common.gitcommit=${GITCOMMIT} -X github.com/psychoplasma/crypto-balance-bot/common.buildtime=${BUILDTIME}"; \
+  cd cmd/$CMD_NAME; \
+  go build -ldflags="-s -w ${LDFLAGS}"
 
 
 FROM ubuntu:20.04
+# CMD_NAME will be passed through the docker compose file.
+# Possible values are 'telebot', 'resource' and 'observer'.
+# Default value is set to 'observer'.
 ARG CMD_NAME=observer
 
 ENV APP_WORKING_DIR=/cryptobalancebot
@@ -79,9 +72,9 @@ RUN mkdir -p $APP_WORKING_DIR
 COPY --from=builder /go/src/crypto-balance-bot/cmd/$CMD_NAME/$CMD_NAME /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
-# Make entrypoint script and app executable files executable
-RUN chmod -R 755 /usr/local/bin/entrypoint.sh \
-  && chmod -R 755 /usr/local/bin/$CMD_NAME
+# Make entrypoint script and app executables executable
+RUN chmod -R 755 /usr/local/bin/entrypoint.sh; \
+  chmod -R 755 /usr/local/bin/$CMD_NAME
 
 VOLUME $APP_WORKING_DIR
 WORKDIR $APP_WORKING_DIR
