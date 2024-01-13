@@ -10,3 +10,30 @@ I've tried to implement domain-driven-design as much as I can do in this porject
 * Ethereum
 
 and more is coming...
+
+## Building and running
+
+```bash
+# Copy docker/.example.env file to docker/.env
+# And modify the environment file according to your system settings
+cp ./docker/.example.env ./docker/.env
+
+# Copy ./example.config.yaml ./config.yaml
+# And modify the configuration file.
+# You will need a Telegram bot created and a bot token.
+# See here https://core.telegram.org/bots/tutorial#obtain-your-bot-token
+cp ./example.config.yaml ./config.yaml
+
+# Build the images
+docker-compose -f docker/docker-compose.yml build
+
+# Run all the containers of the project
+docker-compose -f docker/docker-compose.yml up -d
+
+```
+
+## TODO
+
+* [ ] Make Publisher selectable through configuration file
+* [ ] Make observer options configurable
+* [ ] Implement persistance for postgresql
