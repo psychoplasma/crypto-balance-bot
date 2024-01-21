@@ -16,9 +16,11 @@ import (
 
 // Config is a configuration for telegram bot
 type Config struct {
-	Token       string        `yaml:"token"`
-	PollingTime time.Duration `yaml:"polling-time"`
-	Database    struct {
+	Telebot struct {
+		Token       string        `yaml:"token"`
+		PollingTime time.Duration `yaml:"polling-time"`
+	} `yaml:"telebot"`
+	Database struct {
 		Type string `yaml:"type"`
 		Name string `yaml:"name"`
 		URI  string `yaml:"uri"`

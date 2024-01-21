@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
@@ -16,8 +17,16 @@ import (
 
 // Config represents configuration options for the observer
 type Config struct {
-	Token    string `yaml:"token"`
-	Currency string `yaml:"currency"`
+	Telebot struct {
+		Token string `yaml:"token"`
+	} `yaml:"telebot"`
+	Observer struct {
+		Currency          string        `yaml:"currency"`
+		BlockHeightMargin uint64        `yaml:"block-margin"`
+		Interval          time.Duration `yaml:"interval"`
+		Parallelism       int           `yaml:"parallelism"`
+		ExitTimeout       time.Duration `yaml:"exit-timeout"`
+	} `yaml:"observer"`
 	Database struct {
 		Type string `yaml:"type"`
 		Name string `yaml:"name"`
@@ -60,8 +69,14 @@ func main() {
 
 	o := NewMovementObserver(
 		application.NewSubscriptionApplication(subsRepo),
-		telegram.NewPublisher(c.Token, telegram.MovementFormatter),
-		c.Currency,
+		telegram.NewPublisher(c.Telebot.Token, telegram.MovementFormatter),
+		c.Observer.Currency,
+		&ObserverOptions{
+			BlockHeightMargin: c.Observer.BlockHeightMargin,
+			ObserveInterval:   c.Observer.Interval * time.Second,
+			MaxParallelism:    c.Observer.Parallelism,
+			ExitTimeout:       c.Observer.ExitTimeout * time.Second,
+		},
 	)
 
 	sig := make(chan os.Signal)

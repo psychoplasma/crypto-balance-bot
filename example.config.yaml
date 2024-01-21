@@ -1,18 +1,26 @@
 # Telebot configurations
-token: "telegram bot token"
-polling-time: 3
+telebot:
+  token: "telegram bot token"
+  polling-time: 3
 
 # Observer configurations
-currency: eth
-interval: 10
-parallelism: 1000
-exitTimeout: 30
+observer:
+  # Currency to observer. Possible values: ["btc", "eth"]
+  currency: eth
+  # Update subscription if latestBlockHeight - subscription.blockHeight > margin
+  block-margin: 0
+  # Sleep time in seconds in-between each observal
+  interval: 10
+  # Maximum number of goroutines for one observal
+  parallelism: 1000
+  # Timeout in seconds when stopping the observer
+  exit-timeout: 30
 
 database:
   type: mongodb
   name: CryptoBalanceBot
   # 'mongodb_cryptobalancebot' is the container name.
-  # Docker network maps containers by their name.
+  # Docker network maps containers by their names.
   # So you don't need to change this unless you change the container name.
   uri: mongodb://mongodb_cryptobalancebot:27017
 

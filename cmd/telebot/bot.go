@@ -90,8 +90,8 @@ type Bot struct {
 // NewBot creates a new instance of Bot
 func NewBot(c *Config, subsApp *application.SubscriptionApplication) Bot {
 	bot, err := tb.NewBot(tb.Settings{
-		Token:  c.Token,
-		Poller: &tb.LongPoller{Timeout: c.PollingTime * time.Second},
+		Token:  c.Telebot.Token,
+		Poller: &tb.LongPoller{Timeout: c.Telebot.PollingTime * time.Second},
 	})
 	if err != nil {
 		log.Fatal(err)

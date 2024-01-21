@@ -35,5 +35,4 @@ docker-compose -f docker/docker-compose.yml up -d
 ## TODO
 
 * [ ] Make Publisher selectable through configuration file
-* [ ] Make observer options configurable
 * [ ] Implement persistance for postgresql
