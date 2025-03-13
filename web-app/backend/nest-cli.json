@@ -1,0 +1,7 @@
+{
+  "collection": {
+    "root": "src",
+    "entryFile": "main.ts",
+    "language": "ts"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "crypto-balance-bot-backend",
+  "version": "1.0.0",
+  "description": "Backend for the crypto-balance-bot application using Nest.js",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^9.0.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/platform-express": "^9.0.0",
+    "@prisma/client": "^6.4.1",
+    "bcrypt": "^5.0.1",
+    "class-transformer": "^0.4.0",
+    "class-validator": "^0.13.1",
+    "jsonwebtoken": "^8.5.1",
+    "passport": "^0.4.1",
+    "passport-jwt": "^4.0.0",
+    "prisma": "^6.4.1",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^9.0.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "ts-loader": "^9.2.6",
+    "typescript": "^5.8.2"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testEnvironment": "node"
+  }
+}

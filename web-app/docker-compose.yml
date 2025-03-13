@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: app-backend
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        npx prisma db push
+        npm start
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: app-frontend
+    ports:
+      - '3001:3000'
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+      - db
+
+  db:
+    container_name: mongodb_cryptobalancebot
+    image: mongo:5.0.5
+    restart: always
+    ports:
+      - '27017:27017'
+    expose:
+      - 27017
+    # volumes:
+    #   - ${DB_DATA_DIR}:/data/db
+
+volumes:
+  db_data:
