@@ -1,7 +1,9 @@
-import { Subscription, User } from "./types";
+import { Subscription } from './types';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 
 export async function login(email: string, password: string, name?: string): Promise<Response> {
-  return await fetch('/api/auth/login', {
+  return await fetch(`${BACKEND_URL}/auth/login`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
@@ -11,7 +13,7 @@ export async function login(email: string, password: string, name?: string): Pro
 }
 
 export async function signup(email: string, password: string, name?: string): Promise<Response> {
-  return await fetch('/api/auth/signup', {
+  return await fetch(`${BACKEND_URL}/auth/signup`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
@@ -27,7 +29,7 @@ export async function createSubscription(
   blockHeight: number,
   startingBlockheight: number,
 ): Promise<Subscription> {
-  const res = await fetch(`/api/subscriptions/${userId}`, {
+  const res = await fetch(`${BACKEND_URL}/subscriptions/${userId}`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ export async function createSubscription(
 }
 
 export async function getSubscriptions(userId: string): Promise<Subscription[]> {
-  const res = await fetch(`/api/subscriptions/${userId}`, {
+  const res = await fetch(`${BACKEND_URL}/subscriptions/${userId}`, {
     method: 'GET',
     headers: {
         'Content-Type': 'application/json',
@@ -56,7 +58,7 @@ export async function getSubscriptions(userId: string): Promise<Subscription[]> 
 }
 
 export async function getSubscriptionsByCurrency(userId: string, currency: string): Promise<Subscription[]> {
-  const res = await fetch(`/api/subscriptions/${userId}/${currency}`, {
+  const res = await fetch(`${BACKEND_URL}/subscriptions/${userId}/${currency}`, {
     method: 'GET',
     headers: {
         'Content-Type': 'application/json',
@@ -67,7 +69,7 @@ export async function getSubscriptionsByCurrency(userId: string, currency: strin
 }
 
 export async function deleteSubscription(userId: string, currency: string, address: string): Promise<Response> {
-  return await fetch(`/api/subscriptions/${userId}`, {
+  return await fetch(`${BACKEND_URL}/subscriptions/${userId}`, {
     method: 'DELETE',
     headers: {
         'Content-Type': 'application/json',

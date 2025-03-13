@@ -3,32 +3,32 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: Dockerfile
     image: app-backend
     ports:
       - '3000:3000'
     environment:
       - NODE_ENV=production
-    volumes:
-      - ./backend:/app
+      - DATABASE_URL
     depends_on:
       - db
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         npx prisma db push
-        npm start
+        node /app/dist/main.js
 
   frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: Dockerfile
     image: app-frontend
     ports:
       - '3001:3000'
     environment:
       - NODE_ENV=production
+      - BACKEND_URL
     depends_on:
       - backend
       - db
