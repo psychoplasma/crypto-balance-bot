@@ -1,19 +1,22 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { BlockchainService } from './blockchain.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto'
 import { DeleteSubscriptionDto } from './dto/delete-subscription.dto';
+import { AuthGuard } from '../auth/auth.guard';
 
-@Controller('subscriptions')
+@Controller('api/subscriptions')
 export class BlockchainController {
   constructor(private readonly blockchainService: BlockchainService) {}
 
+  @UseGuards(AuthGuard)
   @Post(':userId')
   async createSubscription(
+    @Request() req: { user: { sub: string, username: string} },
     @Param('userId') userId: string,
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ) {
     return await this.blockchainService.subscribe(
-      userId,
+      req.user.sub,
       createSubscriptionDto.currency,
       createSubscriptionDto.address,
       createSubscriptionDto.blockHeight,
@@ -21,6 +24,7 @@ export class BlockchainController {
     );
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':userId')
   async deleteSubscription(
     @Param('userId') userId: string,
@@ -32,12 +36,13 @@ export class BlockchainController {
       deleteSubscriptionDto.address,
     );
   }
-
+  @UseGuards(AuthGuard)
   @Get(':userId')
   async getUserSubscriptions(@Param('userId') userId: string): Promise<any[]> {
     return await this.blockchainService.getSubscriptionsByUserId(userId);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':userId/:currency')
   async getUserSubscriptionsByCurrency(
     @Param('userId') userId: string,

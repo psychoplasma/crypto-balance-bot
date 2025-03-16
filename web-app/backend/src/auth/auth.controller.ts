@@ -4,7 +4,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { mapToUserResponse, UserResponse } from '../users/dto/user-response.dto';
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

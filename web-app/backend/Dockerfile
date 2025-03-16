@@ -30,12 +30,6 @@ RUN yarn build
 # Runner stage
 FROM node:20
 
-# Define build arguments
-ARG DATABASE_URL
-
-# Set environment variables
-ENV DATABASE_URL=$DATABASE_URL
-
 # Set the working directory
 WORKDIR /app
 
