@@ -29,12 +29,6 @@ RUN yarn build
 # Production stage
 FROM node:20-alpine
 
-# Define build arguments
-ARG BACKEND_URL
-
-# Set environment variables
-ENV BACKEND_URL=$BACKEND_URL
-
 WORKDIR /app
 
 # Copy necessary files from builder

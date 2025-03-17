@@ -1,7 +1,9 @@
 export interface User {
-  email: string,
-  name?: string,
-  createdAt: Date,
+  id: string;
+  email: string;
+  name?: string;
+  createdAt: Date;
+  token?: string;
 }
 
 export interface Subscription {

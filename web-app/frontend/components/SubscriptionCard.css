@@ -1,0 +1,56 @@
+.subscription-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.subscription-card:hover {
+    transform: translateY(-2px);
+}
+
+.subscription-info {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.currency {
+    font-weight: bold;
+    color: #0070f3;
+}
+
+.address {
+    color: #666;
+    font-family: monospace;
+}
+
+.balance {
+    color: #2ecc71;
+    font-weight: 500;
+}
+
+.unsubscribe-btn {
+    padding: 0.5rem 1rem;
+    background-color: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.unsubscribe-btn:hover {
+    background-color: #ff6b81;
+}
+
+@media (max-width: 600px) {
+    .subscription-card {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+}

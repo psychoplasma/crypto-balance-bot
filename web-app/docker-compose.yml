@@ -11,6 +11,8 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
     depends_on:
       - db
     entrypoint: ["/bin/sh", "-c"]
