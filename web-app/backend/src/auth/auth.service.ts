@@ -20,6 +20,7 @@ export class AuthService {
     if (user && user.password === password) {
       const payload = { username: user.email, sub: user.id };
       return {
+        ...user, // FIXME: do not set password
         accessToken: this.jwtService.sign(payload),
       };
     }
