@@ -1,27 +1,40 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { login_ } from '@/actions/actions'
+import { useRef, useState } from 'react';
+import { loginAction } from '@/actions/actions';
 import './LoginForm.css';
+import { useFormStatus } from 'react-dom';
 
 export default function LoginForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login: authLogin } = useAuth();
+
+  function Submit() {
+    const { pending } = useFormStatus();
+    return (
+      <button className={"submit-btn"} disabled={pending}>
+        {pending ? 'Logging in...' : 'Login'}
+      </button>
+    );
+  }
 
   const submitAction = async (formData: FormData) => {
     setError('');
 
     try {
-      const { userId, token } = await login_(
+      const { error, userId } = await loginAction(
         formData.get('email') as string,
-        formData.get('password') as string, //FIXME: pass password hash instead)
+        formData.get('password') as string, //FIXME: pass password hash instead
       );
-      const res = await authLogin(userId, token);
 
-      router.push(`/user?userId=${userId}`);
+      if (!error) {
+        formRef.current?.reset();
+        router.push(`/user?userId=${userId}`);
+      } else {
+        setError(error || 'Login failed');
+      }
     } catch (error) {
       setError('An error occurred during login');
     }
@@ -38,7 +51,7 @@ export default function LoginForm() {
         <input type="password" name="password" required/>
       </div>
       {error && <p className="error">{error}</p>}
-      <button type="submit" className="submit-btn">Login</button>
+      <Submit />
     </form>
   );
 };

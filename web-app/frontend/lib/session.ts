@@ -1,43 +1,51 @@
 import 'server-only';
-import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { JWTPayload, SignJWT, jwtVerify } from 'jose';
- 
-const secretKey = process.env.SESSION_SECRET;
-const encodedKey = new TextEncoder().encode(secretKey);
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from "next/server";
+
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET_KEY);
+const COOKIE_NAME = 'user_session';
+const EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface SessionPayload extends JWTPayload {
   userId: string;
   token: string;
+  expiresAt: Date;
 }
- 
-export async function encrypt(payload: SessionPayload) {
-  return new SignJWT(payload)
+
+interface SessionOptions {
+  path?: string;
+  secure?: boolean;
+  sameSite?: 'strict' | 'lax' | 'none';
+  maxAge?: number;
+}
+
+async function encrypt(payload: SessionPayload) {
+  return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
-    .sign(encodedKey);
+    .setExpirationTime('24h')
+    .sign(JWT_SECRET);
 }
- 
-export async function decrypt(session: string | undefined = '') {
-  try {
-    const { payload } = await jwtVerify(session, encodedKey, {
-      algorithms: ['HS256'],
-    });
-    return payload;
-  } catch (error) {
-    console.log('Failed to verify session');
-  }
+
+async function decrypt(input: string | undefined = ''): Promise<SessionPayload> {
+  const { payload } = await jwtVerify(input, JWT_SECRET, {
+    algorithms: ["HS256"],
+  });
+
+  return payload as SessionPayload;
 }
  
 export async function createSession(userId: string, token: string) {
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + EXPIRY);
   const session = await encrypt({ userId, token, expiresAt });
   const cookieStore = await cookies();
  
-  cookieStore.set('session', session, {
+  cookieStore.set(COOKIE_NAME, session, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     expires: expiresAt,
     sameSite: 'lax',
     path: '/',
@@ -45,17 +53,17 @@ export async function createSession(userId: string, token: string) {
 }
 
 export async function updateSession() {
-  const session = (await cookies()).get('session')?.value;
+  const cookieStore = await cookies();
+  const session = cookieStore.get(COOKIE_NAME)?.value;
   const payload = await decrypt(session);
  
   if (!session || !payload) {
     return null;
   }
  
-  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
- 
-  const cookieStore = await cookies();
-  cookieStore.set('session', session, {
+  const expires = new Date(Date.now() + EXPIRY);
+
+  cookieStore.set(COOKIE_NAME, session, {
     httpOnly: true,
     secure: true,
     expires: expires,
@@ -64,25 +72,65 @@ export async function updateSession() {
   });
 }
 
-export const getSession = cache(async () => {
-  const cookie = (await cookies()).get('session')?.value;
-  const session = await decrypt(cookie);
+export async function updateSession_(request: NextRequest) {
+  const session = request.cookies.get(COOKIE_NAME)?.value;
+  const payload = await decrypt(session);
  
-  return {
-    isAuth: !!session?.userId || !!session?.token,
-    userId: session?.userId,
-    token: session?.token,
-  };
+  if (!session || !payload) {
+    return null;
+  }
+
+  // Refresh the session so it doesn't expire
+  payload.expiresAt = new Date(Date.now() + EXPIRY);
+
+  const res = NextResponse.next();
+  res.cookies.set({
+    name: COOKIE_NAME,
+    value: await encrypt(payload),
+    httpOnly: true,
+    expires: payload.expiresAt,
+  });
+
+  return res;
+}
+
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
+  const cookieStore = await cookies();
+  const cookie = cookieStore.get(COOKIE_NAME)?.value;
+  const payload = await decrypt(cookie);
+
+  if (!cookie || !payload) {
+    return null;
+  }
+ 
+  return payload;
 });
+
+export async function validateSession() {
+  const payload = await getSession();
+
+  if (!payload
+    || isPast(new Date(payload.expiresAt))
+    || !payload?.userId
+    || !payload?.token
+  ) {
+    return {
+      isAuth: false,
+    }
+  }
+
+  return {
+    isAuth: true,
+    userId: payload?.userId,
+    token: payload?.token,
+  }
+}
 
 export async function deleteSession() {
   const cookieStore = await cookies();
-  cookieStore.delete('session');
+  cookieStore.delete(COOKIE_NAME);
 }
 
-interface SessionOptions {
-  path?: string;
-  secure?: boolean;
-  sameSite?: 'strict' | 'lax' | 'none';
-  maxAge?: number;
+function isPast(time: Date): boolean {
+  return time.getTime() < Date.now();
 }

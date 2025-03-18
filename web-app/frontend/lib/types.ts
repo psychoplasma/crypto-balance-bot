@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name?: string;
   createdAt: Date;
-  token?: string;
+  accessToken?: string;
 }
 
 export interface Subscription {
