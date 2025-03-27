@@ -1,7 +1,10 @@
-FROM node:20 AS deps
+FROM node:20-alpine AS deps
 
 # Set the working directory
 WORKDIR /app
+
+# Install build dependencies for bcrypt
+RUN apk add --no-cache python3 make g++ build-base
 
 # Copy yarn.lock, package.json and package-lock.json
 COPY package*.json yarn.lock nest-cli.json ./
@@ -28,7 +31,7 @@ RUN npx prisma generate
 RUN yarn build
 
 # Runner stage
-FROM node:20
+FROM node:20-alpine
 
 # Set the working directory
 WORKDIR /app
@@ -41,4 +44,4 @@ COPY --from=builder /app/dist ./dist
 # Expose the application port
 EXPOSE 3000
 
-CMD []
+ENTRYPOINT [ "/bin/sh", "-c" ]

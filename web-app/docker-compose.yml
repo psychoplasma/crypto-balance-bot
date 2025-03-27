@@ -11,11 +11,10 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_SECRET
+      - JWT_EXPIRATION
     depends_on:
       - db
-    entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         npx prisma db push
@@ -31,6 +30,7 @@ services:
     environment:
       - NODE_ENV=production
       - BACKEND_URL
+      - SESSION_SECRET_KEY
     depends_on:
       - backend
       - db
