@@ -4,8 +4,7 @@ import { JWTPayload, SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from "next/server";
 
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET_KEY);
+const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET_KEY);
 const COOKIE_NAME = 'user_session';
 const EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -133,11 +132,11 @@ async function encrypt(payload: SessionPayload) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')
-    .sign(JWT_SECRET);
+    .sign(SESSION_SECRET);
 }
 
 async function decrypt(input: string | undefined = ''): Promise<SessionPayload> {
-  const { payload } = await jwtVerify(input, JWT_SECRET, {
+  const { payload } = await jwtVerify(input, SESSION_SECRET, {
     algorithms: ["HS256"],
   });
 

@@ -45,7 +45,7 @@ const UserPage = () => {
     try {
       await deleteSubscriptionAction(currency, address);
       setSubscriptions(subscriptions.filter(
-        sub => sub.currency !== currency && sub.account !== address),
+        sub => sub.currency !== currency || sub.account !== address),
       );
     } catch (error) {
       console.error('Error unsubscribing:', error);

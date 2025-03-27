@@ -107,7 +107,6 @@ async function getAuthHeaders() {
   const { isAuth, token } = await validateSession();
 
   if (!isAuth) {
-    console.error('user is not autheticated. redirecting login page');
     redirect('/login');
   }
 
