@@ -1,24 +1,15 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signupAction } from '@/actions/actions';
+import SubmitButton from './SubmitButton';
 import './SignUpForm.css';
 
 export default function SignUpForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [error, setError] = useState('');
   const router = useRouter();
-
-  function Submit() {
-    const { pending } = useFormStatus();
-    return (
-      <button className={"submit-btn"} disabled={pending}>
-        {pending ? 'Submitting' : 'Sign Up'}
-      </button>
-    );
-  }
 
   async function submitAction(formData: FormData) {
     setError('');
@@ -47,7 +38,7 @@ export default function SignUpForm() {
           <input type="password" name="password" required />
       </div>
       {error && <p className={"error"}>{error}</p>}
-      <Submit />
+      <SubmitButton text='Sign Up' pendingText='Submitting...' />
     </form>
   );
 };

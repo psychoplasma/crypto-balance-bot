@@ -3,7 +3,7 @@ import './SubscriptionCard.css';
 
 interface SubscriptionCardProps {
     subscription: Subscription;
-    onUnsubscribe: (id: string, currency: string, address: string) => Promise<void>;
+    onUnsubscribe: (currency: string, address: string) => Promise<void>;
 }
 
 const SubscriptionCard = ({ subscription, onUnsubscribe }: SubscriptionCardProps) => {
@@ -15,7 +15,7 @@ const SubscriptionCard = ({ subscription, onUnsubscribe }: SubscriptionCardProps
       </div>
       <button 
         className="unsubscribe-btn"
-        onClick={() => onUnsubscribe(subscription.id, subscription.currency, subscription.account)}
+        onClick={() => onUnsubscribe(subscription.currency, subscription.account)}
       >
         Unsubscribe
       </button>

@@ -33,3 +33,18 @@
 .navbar-links a:hover {
     color: #0070f3;
 }
+
+.nav-button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+}
+
+.nav-button:hover {
+    color: #0070f3;
+}

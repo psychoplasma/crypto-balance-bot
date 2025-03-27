@@ -10,48 +10,52 @@ import {
 import {
   createSessionAction,
   clearSessionAction,
-  validateSessionAction,
-} from '../actions/session';
+  isAuthenticated,
+} from '@/actions/session';
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  isLoading: boolean;
   authLogin: (userId: string, token: string) => Promise<void>;
   authLogout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
+  isLoading: true,
   authLogin: async () => {},
   authLogout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function validateSession() {
-      const { success } = await validateSessionAction();
-
-      console.log(`authenticating: ${success}`);
-      setIsAuthenticated(success);
+    async function checkAuth() {
+      const { isAuth } = await isAuthenticated();
+      setAuthenticated(isAuth);
+      setIsLoading(false);
     };
-    validateSession();
+
+    checkAuth();
   }, []);
 
   const authLogin = async (userId: string, token: string) => {
     await createSessionAction(userId, token);
-    setIsAuthenticated(true);
+    setAuthenticated(true);
   };
 
   const authLogout = async () => {
     await clearSessionAction();
-    setIsAuthenticated(false);
+    setAuthenticated(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
+        isAuthenticated: authenticated,
+        isLoading,
         authLogin,
         authLogout,
       }}

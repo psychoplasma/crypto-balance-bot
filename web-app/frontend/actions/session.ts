@@ -6,11 +6,11 @@ import {
   updateSession,
   validateSession,
 } from '@/lib/session';
-import { login as loginApi } from '@/lib/api';
 
-export async function login_(email: string, password: string): Promise<{ userId: string, token: string}> {
-  const { id, accessToken } = await loginApi(email, password);
-  return { userId: id, token: accessToken!! };
+export interface AuthResult {
+  isAuth: boolean;
+  userId?: string;
+  token?: string;
 }
 
 export async function createSessionAction(userId: string, token: string) {
@@ -18,6 +18,7 @@ export async function createSessionAction(userId: string, token: string) {
     await createSession(userId, token);
     return { success: true };
   } catch (error) {
+    console.error('Error while creating session:', error);
     return { success: false, error: 'Failed to create session' };
   }
 }
@@ -40,20 +41,11 @@ export async function refreshSessionAction() {
   }
 }
 
-export async function validateSessionAction() {
+export async function isAuthenticated(): Promise<AuthResult> {
   try {
-    const { isAuth } = await validateSession();
-    return { success: isAuth };
+    return validateSession();
   } catch (error) {
-    return { success: false, error: 'Failed to update session' };
-  }
-}
-
-export async function validateAndGet() {
-  try {
-    const { isAuth, token, userId } = await validateSession();
-    return { success: true, isAuth, token, userId };
-  } catch (error) {
-    return { success: false, error: 'Failed to update session' };
+    console.error('Error while validating session:', error);
+    return { isAuth: false };
   }
 }

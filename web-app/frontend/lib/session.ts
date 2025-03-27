@@ -21,24 +21,12 @@ interface SessionOptions {
   sameSite?: 'strict' | 'lax' | 'none';
   maxAge?: number;
 }
-
-async function encrypt(payload: SessionPayload) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('24h')
-    .sign(JWT_SECRET);
-}
-
-async function decrypt(input: string | undefined = ''): Promise<SessionPayload> {
-  const { payload } = await jwtVerify(input, JWT_SECRET, {
-    algorithms: ["HS256"],
-  });
-
-  return payload as SessionPayload;
-}
  
 export async function createSession(userId: string, token: string) {
+  if (!token) {
+    throw new Error('empty jwt token');
+  }
+
   const expiresAt = new Date(Date.now() + EXPIRY);
   const session = await encrypt({ userId, token, expiresAt });
   const cookieStore = await cookies();
@@ -72,6 +60,11 @@ export async function updateSession() {
   });
 }
 
+export async function deleteSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_NAME);
+}
+
 export async function updateSession_(request: NextRequest) {
   const session = request.cookies.get(COOKIE_NAME)?.value;
   const payload = await decrypt(session);
@@ -94,25 +87,13 @@ export async function updateSession_(request: NextRequest) {
   return res;
 }
 
-export const getSession = cache(async (): Promise<SessionPayload | null> => {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(COOKIE_NAME)?.value;
-  const payload = await decrypt(cookie);
-
-  if (!cookie || !payload) {
-    return null;
-  }
- 
-  return payload;
-});
-
 export async function validateSession() {
   const payload = await getSession();
 
   if (!payload
     || isPast(new Date(payload.expiresAt))
-    || !payload?.userId
-    || !payload?.token
+    || !payload.userId
+    || !payload.token
   ) {
     return {
       isAuth: false,
@@ -126,11 +107,39 @@ export async function validateSession() {
   }
 }
 
-export async function deleteSession() {
+const getSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
-}
+  const cookie = cookieStore.get(COOKIE_NAME)?.value;
+
+  if (!cookie) {
+    return null;
+  }
+
+  const payload = await decrypt(cookie);
+
+  if (!payload) {
+    return null;
+  }
+ 
+  return payload;
+});
 
 function isPast(time: Date): boolean {
   return time.getTime() < Date.now();
+}
+
+async function encrypt(payload: SessionPayload) {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('24h')
+    .sign(JWT_SECRET);
+}
+
+async function decrypt(input: string | undefined = ''): Promise<SessionPayload> {
+  const { payload } = await jwtVerify(input, JWT_SECRET, {
+    algorithms: ["HS256"],
+  });
+
+  return payload as SessionPayload;
 }

@@ -36,13 +36,12 @@ export async function signup(email: string, password: string, name?: string): Pr
 }
 
 export async function createSubscription(
-  userId: string,
   currency: string,
   address: string,
   blockHeight?: number,
   startingBlockheight?: number,
 ): Promise<Subscription> {
-  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions/${userId}`, {
+  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions`, {
     method: 'POST',
     body: JSON.stringify({
       currency,
@@ -59,8 +58,8 @@ export async function createSubscription(
   return (await res.json()) as Subscription;
 }
 
-export async function getSubscriptions(userId: string): Promise<Subscription[]> {
-  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions/${userId}`, {
+export async function getSubscriptions(): Promise<Subscription[]> {
+  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions`, {
     method: 'GET',
   });
 
@@ -70,8 +69,8 @@ export async function getSubscriptions(userId: string): Promise<Subscription[]> 
   return (await res.json()) as Subscription[];
 }
 
-export async function getSubscriptionsByCurrency(userId: string, currency: string): Promise<Subscription[]> {
-  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions/${userId}/${currency}`, {
+export async function getSubscriptionsByCurrency(currency: string): Promise<Subscription[]> {
+  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions/${currency}`, {
     method: 'GET',
   });
 
@@ -82,8 +81,8 @@ export async function getSubscriptionsByCurrency(userId: string, currency: strin
   return (await res.json()) as Subscription[];
 }
 
-export async function deleteSubscription(userId: string, currency: string, address: string): Promise<void> {
-  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions/${userId}`, {
+export async function deleteSubscription(currency: string, address: string): Promise<void> {
+  const res = await authenticatedRequest(`${BACKEND_URL}/api/subscriptions`, {
     method: 'DELETE',
     body: JSON.stringify({ currency, address }),
   });
