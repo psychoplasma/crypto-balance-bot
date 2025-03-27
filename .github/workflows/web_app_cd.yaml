@@ -1,4 +1,4 @@
-name: Web-App/backend CI-CD
+name: Web-App CD
 
 on:
   push:
@@ -33,7 +33,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Backend Image
       - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
@@ -55,7 +54,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Backend Image
       - name: Extract metadata for Frontend
         id: meta-frontend
         uses: docker/metadata-action@v5
