@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid()) @map("_id")
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
   email        String         @unique
   password     String
   createdAt    DateTime       @default(now())
@@ -24,7 +24,7 @@ model User {
 }
 
 model Subscription {
-  id                  String   @id @default(uuid()) @map("_id")
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
   user                User     @relation(fields: [userId], references: [id])
   userId              String
   blockHeight         Int

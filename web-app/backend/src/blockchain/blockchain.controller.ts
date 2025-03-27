@@ -9,10 +9,9 @@ export class BlockchainController {
   constructor(private readonly blockchainService: BlockchainService) {}
 
   @UseGuards(AuthGuard)
-  @Post(':userId')
+  @Post()
   async createSubscription(
     @Request() req: { user: { sub: string, username: string} },
-    @Param('userId') userId: string,
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ) {
     return await this.blockchainService.subscribe(
@@ -25,30 +24,32 @@ export class BlockchainController {
   }
 
   @UseGuards(AuthGuard)
-  @Delete(':userId')
+  @Delete()
   async deleteSubscription(
-    @Param('userId') userId: string,
+    @Request() req: { user: { sub: string, username: string} },
     @Body() deleteSubscriptionDto: DeleteSubscriptionDto,
   ) {
     return await this.blockchainService.unsubscribe(
-      userId,
+      req.user.sub,
       deleteSubscriptionDto.currency,
       deleteSubscriptionDto.address,
     );
   }
   @UseGuards(AuthGuard)
-  @Get(':userId')
-  async getUserSubscriptions(@Param('userId') userId: string): Promise<any[]> {
-    return await this.blockchainService.getSubscriptionsByUserId(userId);
+  @Get()
+  async getUserSubscriptions(
+    @Request() req: { user: { sub: string, username: string} },
+  ): Promise<any[]> {
+    return await this.blockchainService.getSubscriptionsByUserId(req.user.sub);
   }
 
   @UseGuards(AuthGuard)
-  @Get(':userId/:currency')
+  @Get(':currency')
   async getUserSubscriptionsByCurrency(
-    @Param('userId') userId: string,
+    @Request() req: { user: { sub: string, username: string} },
     @Param('currency') currency: string,
   ): Promise<any[]> {
     return await this.blockchainService
-      .getSubscriptionsByUserIdAndCurreny(userId, currency);
+      .getSubscriptionsByUserIdAndCurreny(req.user.sub, currency);
   }
 }
