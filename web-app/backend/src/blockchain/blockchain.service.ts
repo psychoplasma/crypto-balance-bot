@@ -45,9 +45,7 @@ export class BlockchainService {
         account: address,
         blockHeight,
         startingBlockHeight,
-        totalReceived: 0,
-        totalSpent: 0,
-        filters: '',
+        filters: [],
       }});
     } catch (error) {
       console.error('Error while creating subscription:', error);

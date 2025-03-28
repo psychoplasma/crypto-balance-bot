@@ -1,5 +1,10 @@
 version: '3.6'
 
+networks:
+  web-app:
+    name: web-app_default
+    external: true
+
 services:
   mongodb:
     container_name: mongodb_cryptobalancebot
@@ -24,9 +29,10 @@ services:
       - $CONFIG_DIR:/cryptobalancebot
   
   observer:
+    platform: linux/amd64
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         - CMD_NAME=observer
     container_name: observer_cryptobalancebot
@@ -35,6 +41,8 @@ services:
       - CONFIG_DIR=${CONFIG_DIR}
     volumes:
       - $CONFIG_DIR:/cryptobalancebot
+    networks:
+      - web-app
 
   resource:
     build:

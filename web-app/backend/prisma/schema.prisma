@@ -30,22 +30,23 @@ model Subscription {
   blockHeight         Int
   startingBlockHeight Int
   currency            String
+  currencyDecimal     String   @default("0")
   account             String
-  totalReceived       BigInt   @default(0)
-  totalSpent          BigInt   @default(0)
-  filters             String
+  totalReceived       String   @default("0")
+  totalSpent          String   @default("0")
+  filters             Filter[]
 
   @@unique([userId, currency, account])
 }
 
-// type Filter {
-//  condition     String
-//  isMust        Boolean
-//  type          FilterType
-// }
+type Filter {
+  condition       String
+  isMust          Boolean
+  type            FilterType
+}
 
-// enum FilterType {
-//  amount
-//  addressOn
-//  addressOff
-// }
+enum FilterType {
+ amount
+ addressOn
+ addressOff
+}

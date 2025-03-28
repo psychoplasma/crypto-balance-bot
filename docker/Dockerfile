@@ -35,14 +35,16 @@ RUN echo "Installing Go"; \
 # Default value is set to 'observer'.
 ENV GOPATH=/go
 ARG CMD_NAME=observer
+WORKDIR $GOPATH/src/crypto-balance-bot
+COPY . .
 RUN echo "Building ${CMD_NAME}"; \
   set -ux; \
-  mkdir -p $GOPATH/src && cd $GOPATH/src; \
-  git clone https://github.com/psychoplasma/crypto-balance-bot.git; \
-  cd crypto-balance-bot; \
+  # mkdir -p $GOPATH/src && cd $GOPATH/src; \
+  # git clone https://github.com/psychoplasma/crypto-balance-bot.git; \
+  # cd /crypto-balance-bot; \
   go mod download; \
   BUILDTIME=$(date --iso-8601=seconds); \
-  GITCOMMIT=$(git describe --always --dirty); \
+  GITCOMMIT=$(git rev-parse --short HEAD); \
   LDFLAGS="-X github.com/psychoplasma/crypto-balance-bot/common.version=master -X github.com/psychoplasma/crypto-balance-bot/common.gitcommit=${GITCOMMIT} -X github.com/psychoplasma/crypto-balance-bot/common.buildtime=${BUILDTIME}"; \
   cd cmd/$CMD_NAME; \
   go build -ldflags="-s -w ${LDFLAGS}"
@@ -54,7 +56,7 @@ FROM ubuntu:20.04
 # Default value is set to 'observer'.
 ARG CMD_NAME=observer
 
-ENV APP_WORKING_DIR=/cryptobalancebot
+# ENV APP_WORKING_DIR=/cryptobalancebot
 ENV APP_EXEC=$CMD_NAME
 
 # Install ca-certificates
@@ -66,16 +68,18 @@ RUN echo "Installing ca-certificates"; \
   apt-get clean;
 
 # Create missing directories
-RUN mkdir -p $APP_WORKING_DIR
+# RUN mkdir -p $APP_WORKING_DIR
 
 # Copy executables from the build stage
 COPY --from=builder /go/src/crypto-balance-bot/cmd/$CMD_NAME/$CMD_NAME /usr/local/bin/
-COPY entrypoint.sh /usr/local/bin/
+COPY docker/entrypoint.sh /usr/local/bin/
 
 # Make entrypoint script and app executables executable
 RUN chmod -R 755 /usr/local/bin/entrypoint.sh; \
   chmod -R 755 /usr/local/bin/$CMD_NAME
 
-VOLUME $APP_WORKING_DIR
-WORKDIR $APP_WORKING_DIR
+# VOLUME $APP_WORKING_DIR
+# WORKDIR $APP_WORKING_DIR
+VOLUME /cryptobalancebot
+WORKDIR /cryptobalancebot
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

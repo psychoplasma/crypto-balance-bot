@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -19,7 +20,7 @@ import (
 )
 
 // CollectionName is the name of Subscription collection
-const CollectionName = "Subscriptions"
+const CollectionName = "Subscription"
 
 // DocumentLimitsPerQuery limits query result to a certain number of documents
 const DocumentLimitsPerQuery = 1000
@@ -210,7 +211,7 @@ func (r *SubscriptionRepository) get(id string) (*Subscription, error) {
 
 func (r *SubscriptionRepository) getByUserID(userID string) ([]*Subscription, error) {
 	ctx := context.Background()
-	query := bson.M{"user_id": userID}
+	query := bson.M{"userId": userID}
 
 	cursor, err := r.subs.Find(ctx, query)
 	if err != nil {
@@ -234,8 +235,8 @@ func (r *SubscriptionRepository) getByCurrency(symbol string, bh uint64) ([]*Sub
 	opts := options.Find()
 	opts.SetLimit(DocumentLimitsPerQuery)
 	query := bson.M{
-		"currency":     symbol,
-		"block_height": bson.M{"$lt": bh},
+		"currency":    symbol,
+		"blockHeight": bson.M{"$lt": bh},
 	}
 
 	cursor, err := r.subs.Find(ctx, query, opts)
@@ -253,17 +254,74 @@ func (r *SubscriptionRepository) getByCurrency(symbol string, bh uint64) ([]*Sub
 }
 
 func (r *SubscriptionRepository) replaceOrInsert(s *Subscription) error {
-	opts := options.Replace().SetUpsert(true)
 	query := bson.M{"_id": s.ID}
-	update := s
 
-	res, err := r.subs.ReplaceOne(context.Background(), query, update, opts)
+	log.Println("Checking if record exists...")
+	log.Printf("Subscription: ID=%s, UserID=%s, Currency=%s, Account=%s",
+		s.ID, s.UserID, s.Currency, s.Account)
+
+	err := r.subs.FindOne(context.Background(), query).Err()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return r.insert(s)
+		}
+		return err
+	}
+
+	return r.replace(s)
+}
+
+func (r *SubscriptionRepository) replace(s *Subscription) error {
+	query := bson.M{
+		"userId":   s.UserID,
+		"currency": s.Currency,
+		"account":  s.Account,
+	}
+	// update := bson.M{
+	// 	"blockHeight":         s.BlockHeight,
+	// 	"totalReceived":       s.TotalReceived,
+	// 	"totalSpent":          s.TotalSpent,
+	// 	"startingBlockHeight": s.StartingBlockHeight,
+	// 	"filters":             s.Filters,
+	// }
+
+	update := bson.D{
+		{
+			Key: "$set",
+			Value: bson.M{
+				"blockHeight":         s.BlockHeight,
+				"totalReceived":       s.TotalReceived,
+				"totalSpent":          s.TotalSpent,
+				"startingBlockHeight": s.StartingBlockHeight,
+				"filters":             s.Filters,
+			},
+		},
+	}
+
+	log.Println("Updating record...")
+
+	res, err := r.subs.ReplaceOne(context.Background(), query, update)
 	if err != nil {
 		return err
 	}
 
-	if res.UpsertedID != nil && (res.UpsertedID).(string) != s.ID {
+	if res.MatchedCount < 1 || (res.UpsertedID).(string) != s.ID {
 		return fmt.Errorf("failed to save the subscription (%s)", s.ID)
+	}
+
+	return nil
+}
+
+func (r *SubscriptionRepository) insert(s *Subscription) error {
+	log.Println("Creating new record...")
+
+	res, err := r.subs.InsertOne(context.Background(), s)
+	if err != nil {
+		return err
+	}
+
+	if res.InsertedID != nil && (res.InsertedID).(string) != s.ID {
+		return fmt.Errorf("failed to create subscription (%s)", s.ID)
 	}
 
 	return nil
@@ -285,23 +343,23 @@ func (r *SubscriptionRepository) delete(id string) error {
 
 // Subscription represents a document in MongoDB corresponding to domain.Subscription
 type Subscription struct {
-	ID                  string   `bson:"_id" json:"_id"`
-	UserID              string   `bson:"user_id" json:"user_id"`
-	Currency            string   `bson:"currency" json:"currency"`
-	CurrencyDecimal     string   `bson:"currency_decimal" json:"currency_decimal"`
-	Account             string   `bson:"account" json:"account"`
-	BlockHeight         uint64   `bson:"block_height" json:"block_height"`
-	TotalReceived       string   `bson:"total_received" json:"total_received"`
-	TotalSpent          string   `bson:"total_spent" json:"total_spent"`
-	StartingBlockHeight uint64   `bson:"starting_block_height" json:"starting_block_height"`
-	Filters             []Filter `bson:"filters" json:"filters"`
+	ID                  string   `bson:"_id"                 json:"_id"`
+	UserID              string   `bson:"userId"              json:"userId"`
+	Currency            string   `bson:"currency"            json:"currency"`
+	CurrencyDecimal     string   `bson:"currencyDecimal"     json:"currencyDecimal"`
+	Account             string   `bson:"account"             json:"account"`
+	BlockHeight         uint64   `bson:"blockHeight"         json:"blockHeight"`
+	TotalReceived       string   `bson:"totalReceived"       json:"totalReceived"`
+	TotalSpent          string   `bson:"totalSpent"          json:"totalSpent"`
+	StartingBlockHeight uint64   `bson:"startingBlockHeight" json:"startingBlockHeight"`
+	Filters             []Filter `bson:"filters"             json:"filters"`
 }
 
 // Filter represents a document in MongoDB corresponding to domain.Filter
 type Filter struct {
 	Condition string `bson:"condition" json:"condition"`
-	IsMust    bool   `bson:"is_must" json:"is_must"`
-	Type      string `bson:"type" json:"type"`
+	IsMust    bool   `bson:"isMust"    json:"isMust"`
+	Type      string `bson:"type"      json:"type"`
 }
 
 // FromDomain converts domain.Subscription model to a MongoDB document representation

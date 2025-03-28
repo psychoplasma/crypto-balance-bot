@@ -13,7 +13,7 @@ COPY package*.json yarn.lock nest-cli.json ./
 RUN yarn install --frozen-lockfile
 
 # Building stage
-FROM node:20 AS builder
+FROM node:20-alpine AS builder
 
 # Set the working directory
 WORKDIR /app
