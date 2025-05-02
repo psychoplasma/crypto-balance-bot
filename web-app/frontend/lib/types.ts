@@ -12,6 +12,9 @@ export interface Subscription {
   blockHeight: number;
   startingBlockHeight: number;
   currency: string;
+  decimal: string;
   account: string;
   filters: string;
+  totalSpent: string;
+  totalReceived: string;
 }

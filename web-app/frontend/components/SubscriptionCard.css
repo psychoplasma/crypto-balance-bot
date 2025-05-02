@@ -1,56 +1,80 @@
 .subscription-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     background: white;
+    border-radius: 16px;
     padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.subscription-card:hover {
-    transform: translateY(-2px);
+.card-header {
+    margin-bottom: 1.5rem;
 }
 
-.subscription-info {
-    display: grid;
-    gap: 0.5rem;
+.currency-symbol {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
 }
 
-.currency {
-    font-weight: bold;
-    color: #0070f3;
-}
-
-.address {
-    color: #666;
+.wallet-address {
     font-family: monospace;
+    color: #666;
+    word-break: break-all;
+    font-size: 0.9rem;
 }
 
-.balance {
-    color: #2ecc71;
+.card-content {
+    position: relative;
+}
+
+.stat-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    color: #333;
     font-weight: 500;
+    font-size: 1rem;
 }
 
 .unsubscribe-btn {
-    padding: 0.5rem 1rem;
     background-color: #ff4757;
     color: white;
+    padding: 8px 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    float: right;
 }
 
 .unsubscribe-btn:hover {
     background-color: #ff6b81;
 }
 
-@media (max-width: 600px) {
-    .subscription-card {
-        flex-direction: column;
+@media (max-width: 640px) {
+    .stat-group {
+        grid-template-columns: 1fr;
         gap: 1rem;
-        text-align: center;
+    }
+    
+    .subscription-card {
+        padding: 1rem;
     }
 }

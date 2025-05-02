@@ -15,11 +15,11 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 const CURRENCIES = [
   {
-    symbol: 'BTC',
+    symbol: 'btc',
     name: 'Bitcoin',
   },
   {
-    symbol: 'ETH',
+    symbol: 'eth',
     name: 'Ethereum',
   }
 ];
