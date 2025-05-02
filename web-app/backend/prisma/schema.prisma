@@ -30,7 +30,7 @@ model Subscription {
   blockHeight         Int
   startingBlockHeight Int
   currency            String
-  currencyDecimal     String   @default("0")
+  currencyDecimal     String   @default("1")
   account             String
   totalReceived       String   @default("0")
   totalSpent          String   @default("0")
