@@ -1,5 +1,3 @@
-version: '3.6'
-
 networks:
   web-app:
     name: web-app_default

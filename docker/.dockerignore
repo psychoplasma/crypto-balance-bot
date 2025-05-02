@@ -1,3 +1,9 @@
 config.*
-.env*
-docker-compose.yml
+web-app
+.github
+.git
+.gitignore
+docker
+README.md
+LICENSE
+example.config.yaml

@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -93,6 +92,9 @@ func (r *SubscriptionRepository) Begin() error {
 func (r *SubscriptionRepository) Fail() {
 	log.Printf("Rollback transaction")
 	defer r.sessionMutex.Unlock()
+	if err := r.session.AbortTransaction(context.Background()); err != nil {
+		log.Printf("Failed to abort transaction: %v", err)
+	}
 	r.session.EndSession(context.Background())
 }
 
@@ -103,6 +105,9 @@ func (r *SubscriptionRepository) Fail() {
 func (r *SubscriptionRepository) Success() {
 	log.Printf("Finalize transaction")
 	defer r.sessionMutex.Unlock()
+	if err := r.session.CommitTransaction(context.Background()); err != nil {
+		log.Printf("Failed to commit transaction: %v", err)
+	}
 	r.session.EndSession(context.Background())
 }
 
@@ -254,36 +259,11 @@ func (r *SubscriptionRepository) getByCurrency(symbol string, bh uint64) ([]*Sub
 }
 
 func (r *SubscriptionRepository) replaceOrInsert(s *Subscription) error {
-	query := bson.M{"_id": s.ID}
-
-	log.Println("Checking if record exists...")
-	log.Printf("Subscription: ID=%s, UserID=%s, Currency=%s, Account=%s",
-		s.ID, s.UserID, s.Currency, s.Account)
-
-	err := r.subs.FindOne(context.Background(), query).Err()
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return r.insert(s)
-		}
-		return err
-	}
-
-	return r.replace(s)
-}
-
-func (r *SubscriptionRepository) replace(s *Subscription) error {
 	query := bson.M{
 		"userId":   s.UserID,
 		"currency": s.Currency,
 		"account":  s.Account,
 	}
-	// update := bson.M{
-	// 	"blockHeight":         s.BlockHeight,
-	// 	"totalReceived":       s.TotalReceived,
-	// 	"totalSpent":          s.TotalSpent,
-	// 	"startingBlockHeight": s.StartingBlockHeight,
-	// 	"filters":             s.Filters,
-	// }
 
 	update := bson.D{
 		{
@@ -298,33 +278,17 @@ func (r *SubscriptionRepository) replace(s *Subscription) error {
 		},
 	}
 
-	log.Println("Updating record...")
-
-	res, err := r.subs.ReplaceOne(context.Background(), query, update)
+	opts := options.Update().SetUpsert(true)
+	res, err := r.subs.UpdateOne(context.Background(), query, update, opts)
 	if err != nil {
 		return err
 	}
 
-	if res.MatchedCount < 1 || (res.UpsertedID).(string) != s.ID {
-		return fmt.Errorf("failed to save the subscription (%s)", s.ID)
+	if res.MatchedCount != 0 || res.UpsertedCount != 0 {
+		return nil
 	}
 
-	return nil
-}
-
-func (r *SubscriptionRepository) insert(s *Subscription) error {
-	log.Println("Creating new record...")
-
-	res, err := r.subs.InsertOne(context.Background(), s)
-	if err != nil {
-		return err
-	}
-
-	if res.InsertedID != nil && (res.InsertedID).(string) != s.ID {
-		return fmt.Errorf("failed to create subscription (%s)", s.ID)
-	}
-
-	return nil
+	return fmt.Errorf("failed to save the subscription (%s)", s.ID)
 }
 
 func (r *SubscriptionRepository) delete(id string) error {

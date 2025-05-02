@@ -32,5 +32,5 @@ func (tp *Publisher) PublishMessage(userID string, i interface{}) {
 		return
 	}
 
-	log.Printf(msg)
+	log.Println(msg)
 }

@@ -55,7 +55,7 @@ type Subscription struct {
 func UserIDFrom(subscriptionID string) string {
 	s := strings.Split(subscriptionID, ":")
 
-	if s == nil || len(s) < 2 || s[0] == "" {
+	if len(s) < 2 || s[0] == "" {
 		return ""
 	}
 
@@ -206,12 +206,8 @@ func (s *Subscription) ApplyMovements(acms *AccountMovements) {
 		switch t.Type {
 		case Received:
 			s.receive(t.Amount)
-			break
 		case Spent:
 			s.spend(t.Amount)
-			break
-		default:
-			continue
 		}
 
 		s.blockHeight = t.BlockHeight

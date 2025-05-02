@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/psychoplasma/crypto-balance-bot/application"
+	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/empty"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/port/adapter/publisher/telegram"
 	"github.com/psychoplasma/crypto-balance-bot/infrastructure/services"
 	"gopkg.in/yaml.v2"
@@ -69,7 +70,7 @@ func main() {
 
 	o := NewMovementObserver(
 		application.NewSubscriptionApplication(subsRepo),
-		telegram.NewPublisher(c.Telebot.Token, telegram.MovementFormatter),
+		empty.NewPublisher(c.Telebot.Token, telegram.MovementFormatter),
 		c.Observer.Currency,
 		&ObserverOptions{
 			BlockHeightMargin: c.Observer.BlockHeightMargin,
@@ -79,15 +80,13 @@ func main() {
 		},
 	)
 
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	// Check for interrupt and kill signals so that we stop observer gracefully
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		select {
-		case <-sig:
-			log.Println("interrupt received, exiting observer")
-			o.Stop()
-		}
+		<-sig
+		log.Println("interrupt received, exiting observer")
+		o.Stop()
 	}()
 
 	o.Start()

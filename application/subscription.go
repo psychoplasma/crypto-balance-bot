@@ -294,7 +294,7 @@ func (sa *SubscriptionApplication) checkAndApplyAccountMovements(s *domain.Subsc
 		return err
 	}
 
-	s.ApplyMovements(acm.Sort())
+	s.ApplyMovements(acm)
 
 	return sa.r.Save(s)
 }
